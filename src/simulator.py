@@ -1,17 +1,17 @@
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem
 from src.aircraft import Aircraft
 from src.settings import Settings
 
 class Simulator(QMainWindow):
-    """A"""
+    """Main simulation App"""
     def __init__(self):
         super().__init__()
 
         self.resolution = Settings.resolution
         self.refresh_rate = Settings.refresh_rate
 
-        self.setWindowTitle("Flight Simulator")
+        self.setWindowTitle("UAV Flight Simulator")
         self.setGeometry(100, 100, self.resolution[0] + 10, self.resolution[1] + 10)
 
         self.scene = QGraphicsScene()
@@ -19,8 +19,8 @@ class Simulator(QMainWindow):
         self.setCentralWidget(self.view)
 
         self.aircrafts = [
-            Aircraft(0, position=[100, 200], speed=4, course=45, size=20),
-            Aircraft(1, position=[700, 200], speed=4, course=135, size=10)
+            Aircraft(0, position=[300, 300], yaw_angle=45, speed=4, course=45, size=20),
+            Aircraft(1, position=[700, 200], yaw_angle=135, speed=4, course=135, size=20)
         ]
 
         self.iterator : int = 0
@@ -29,15 +29,14 @@ class Simulator(QMainWindow):
         self.simulation_timer = QTimer(self)
         self.gui_timer.timeout.connect(self.render_scene)
         self.simulation_timer.timeout.connect(self.update_simulation)
-        self.gui_timer.start(1000 // self.refresh_rate)
-        self.simulation_timer.start(50)
+        
+        self.start_simulation()
 
         self.is_finished : bool = False
         self.show()
-        # self.showFullScreen()
 
     def update_simulation(self):
-        """A"""
+        """Updates simulation looping through aircrafts, checks collisions with another objects and with simulation boundaries"""
         for aircraft in self.aircrafts:
             aircraft.update_position()
 
@@ -52,39 +51,54 @@ class Simulator(QMainWindow):
         self.avoid_collisions()
 
     def avoid_collisions(self):
+        """Detects and schedules avoid maneuver for each aircraft"""
+        # todo: implement
         return
 
+    def reset_simulation(self):
+        for aircraft in self.aircrafts:
+            self.aircrafts.remove(aircraft)
+        self.aircrafts = [
+            Aircraft(0, position=[300, 300], yaw_angle=45, speed=4, course=45, size=20),
+            Aircraft(1, position=[700, 200], yaw_angle=135, speed=4, course=135, size=20)
+        ]
+
+    def start_simulation(self):
+        """Starts all timers"""
+        self.gui_timer.start(1000 // self.refresh_rate) # fps
+        self.simulation_timer.start(30) # simulation speed
+    
     def stop_simulation(self):
         """Stops all timers"""
         self.gui_timer.stop()
         self.simulation_timer.stop()
 
     def check_collision(self):
-        """A"""
+        """Checks and returns if any of the aircrafts collided with each other"""
         for i in range(len(self.aircrafts) - 1):
             for j in range(i + 1, len(self.aircrafts)):
                 distance = ((self.aircrafts[i].position[0] - self.aircrafts[j].position[0]) ** 2 +
                             (self.aircrafts[i].position[1] - self.aircrafts[j].position[1]) ** 2) ** 0.5
-                if distance < ((self.aircrafts[i].size + self.aircrafts[j].size) / 2):
+                if distance <= ((self.aircrafts[i].size + self.aircrafts[j].size) / 2):
                     self.stop_simulation()
-                    print("Collision occurred! Simulation stopped.")
+                    print("Aircrafts collided. Simulation stopped")
                     return True
         return False
 
     def check_offscreen(self):
-        """A"""
+        """Checks and returns if any of the aircrafts collided with simulation boundaries"""
         for aircraft in self.aircrafts:
-            if not (0 <= aircraft.position[0] <= self.resolution[0] and 0 <= aircraft.position[1] <= self.resolution[1]):
+            if not (0 + aircraft.size <= aircraft.position[0] <= self.resolution[0] and 0 + aircraft.size <= aircraft.position[1] <= self.resolution[1]):
                 self.stop_simulation()
-                print("Aircraft got off the main window! Simulation stopped.")
+                print("Aircraft left simulation boundaries. Simulation stopped")
                 return True
         return False
 
     def render_scene(self):
-        """Render the scene with aircrafts as circles, bounding box, and ruler marks."""
+        """Render the scene with aircrafts as circles, bounding box and ruler marks"""
         self.scene.clear()
 
-        bounding_box = QGraphicsRectItem(0, 0, self.resolution[0] - 10, self.resolution[1] - 10)
+        bounding_box = QGraphicsRectItem(0, 0, self.resolution[0], self.resolution[1])
         self.scene.addItem(bounding_box)
 
         for x in range(100, self.resolution[0], 100):
@@ -111,3 +125,25 @@ class Simulator(QMainWindow):
 
         self.view.setScene(self.scene)
         self.view.setSceneRect(0, 0, *self.resolution)
+
+    def keyPressEvent(self, event):
+        """Handles keypress events for steering the first aircraft and simulation state"""
+        if event.modifiers() and Qt.KeyboardModifier.ControlModifier:
+            if event.key() == Qt.Key.Key_C:
+                self.close()
+
+        if event.key() == Qt.Key.Key_D:
+            self.aircrafts[0].course = 0
+        elif event.key() == Qt.Key.Key_S:
+            self.aircrafts[0].course = 90
+        elif event.key() == Qt.Key.Key_A:
+            self.aircrafts[0].course = 180
+        elif event.key() == Qt.Key.Key_W:
+            self.aircrafts[0].course = 270
+
+        elif event.key() == Qt.Key.Key_R:
+            self.stop_simulation()
+            self.reset_simulation()
+            self.start_simulation()
+
+        return super().keyPressEvent(event)

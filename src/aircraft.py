@@ -10,46 +10,50 @@ class Aircraft:
     roll_angle : float = 0.0
     speed : float = 100.0
     course : float = 0.0
-    max_course_change : float = 5.0
+    max_course_change : float = 2.5
     position : QVector2D = (0, 0)
     size : float = 10.0
-    #aircraft_item: AircraftItem
 
-    def __init__(self, id, position, speed, course, size):
+    def __init__(self, id, position, yaw_angle, speed, course, size):
+        """Initializes the aircraft"""
         self.id = id
         self.position = position
         self.speed = speed
-        self.yaw_angle = course
+        self.yaw_angle = yaw_angle
+        self.course = course
         self.size = size
-        #self.aircraft_item = AircraftItem(position, size, self)
 
     def set_course(self, course):
-        while course >= 360:
-            course -= 360
-        while course < 0:
-            course += 360
-        # now, course is only [0, 359]
-        if course > self.yaw_angle:
-            if (course - self.yaw_angle) <= 180:
-                if course < (self.yaw_angle + self.max_course_change):
-                    self.yaw_angle += (course - self.yaw_angle)
-                else:
-                    self.yaw_angle += self.max_course_change
+        """Applies gradual change to yaw angle respecting set course"""
+        # todo: replace with algorithm
+        abs_course = course
+        while abs_course >= 360:
+            abs_course -= 360
+        while abs_course < 0:
+            abs_course += 360
+        abs_course %= 360
+        multiplier = 1
+        if (abs_course - self.yaw_angle) < 0:
+            abs_course += 360
+            multiplier += 1
+        new_yaw_angle = self.yaw_angle
+        if (abs_course - self.yaw_angle) <= 180:
+            if abs_course < (self.yaw_angle + self.max_course_change):
+                new_yaw_angle = abs_course
             else:
-                if course > (self.yaw_angle - self.max_course_change):
-                    self.yaw_angle -= (self.yaw_angle - course)
-                else:
-                    self.yaw_angle -= self.max_course_change
-        elif self.yaw_angle < course:
-            return
+                new_yaw_angle += self.max_course_change
         else:
-            return
-
-        self.yaw_angle = course
+            if abs_course < (self.yaw_angle - self.max_course_change):
+                new_yaw_angle = abs_course
+            else:
+                new_yaw_angle -= self.max_course_change
+        new_yaw_angle %= 360
+        self.yaw_angle = new_yaw_angle
 
     def update_position(self):
-        """A"""
-        # that needs a fix
+        """Updates position of the aircraft, applies smooth course adjustment"""
+        self.set_course(self.course)
+
+        # todo: change to matrix
         self.position[0] += self.speed * cos(radians(self.yaw_angle))
         self.position[1] += self.speed * sin(radians(self.yaw_angle))
-        #self.aircraft_item.set_position(self.position, self.size)

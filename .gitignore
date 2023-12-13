@@ -1,2 +1,5 @@
-venv
-src/aircraft_item.py
+.idea/
+venv/
+
+__pycache__/
+*.pyc
