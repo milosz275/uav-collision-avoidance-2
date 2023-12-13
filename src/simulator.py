@@ -65,7 +65,7 @@ class Simulator(QMainWindow):
 
     def start_simulation(self):
         """Starts all timers"""
-        self.gui_timer.start(1000 // self.refresh_rate) # fps
+        self.gui_timer.start(1000 // self.refresh_rate) # frame time
         self.simulation_timer.start(30) # simulation speed
     
     def stop_simulation(self):

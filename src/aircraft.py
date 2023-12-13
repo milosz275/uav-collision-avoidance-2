@@ -1,6 +1,5 @@
 from PyQt6.QtGui import QVector2D
 from math import cos, sin, radians
-#from src.aircraft_item import AircraftItem
 
 class Aircraft:
     """Aircraft"""
