@@ -11,17 +11,16 @@ class Aircraft:
     course : float = 0.0
     max_course_change : float = 2.5
     position : QVector2D = QVector2D(0, 0)
-    size : float = 10.0
+    size : float = 50.0
     # todo: safe area
 
-    def __init__(self, id, position, yaw_angle, speed, course, size):
+    def __init__(self, id, position, yaw_angle, speed, course):
         """Initializes the aircraft"""
         self.id = id
         self.position = position
         self.speed = speed
         self.yaw_angle = yaw_angle
         self.course = course
-        self.size = size
 
     def update_course(self, course):
         """Applies gradual change to yaw angle respecting set course"""
@@ -32,10 +31,9 @@ class Aircraft:
         while abs_course < 0:
             abs_course += 360
         abs_course %= 360
-        multiplier = 1
+        
         if (abs_course - self.yaw_angle) < 0:
             abs_course += 360
-            multiplier += 1
         new_yaw_angle = self.yaw_angle
         if (abs_course - self.yaw_angle) <= 180:
             if abs_course < (self.yaw_angle + self.max_course_change):

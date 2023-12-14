@@ -60,8 +60,8 @@ class Simulator(QMainWindow):
         for aircraft in self.aircrafts:
             self.aircrafts.remove(aircraft)
         self.aircrafts = [
-            Aircraft(0, position=[100, 200], yaw_angle=340, speed=4, course=10, size=20),
-            # Aircraft(1, position=[700, 200], yaw_angle=135, speed=4, course=135, size=20)
+            Aircraft(0, position=[100, 200], yaw_angle=340, speed=4, course=45),
+            Aircraft(1, position=[700, 200], yaw_angle=135, speed=4, course=145)
         ]
 
     def start_simulation(self):
@@ -71,8 +71,8 @@ class Simulator(QMainWindow):
     
     def stop_simulation(self):
         """Stops all timers"""
-        self.gui_timer.stop()
         self.simulation_timer.stop()
+        self.gui_timer.stop()
 
     def check_collision(self):
         """Checks and returns if any of the aircrafts collided with each other"""
@@ -89,7 +89,7 @@ class Simulator(QMainWindow):
     def check_offscreen(self):
         """Checks and returns if any of the aircrafts collided with simulation boundaries"""
         for aircraft in self.aircrafts:
-            if not (0 <= aircraft.position[0] <= self.resolution[0] and 0 <= aircraft.position[1] <= self.resolution[1]):
+            if not (0 + aircraft.size / 2 <= aircraft.position[0] <= self.resolution[0] - aircraft.size / 2 and 0 + aircraft.size / 2 <= aircraft.position[1] <= self.resolution[1] - aircraft.size / 2):
                 self.stop_simulation()
                 print("Aircraft left simulation boundaries. Simulation stopped")
                 return True
@@ -127,15 +127,15 @@ class Simulator(QMainWindow):
             yaw_angle_line = QGraphicsLineItem(
                 aircraft.position[0],
                 aircraft.position[1],
-                aircraft.position[0] + self.bounding_box_resolution[0] * cos(radians(aircraft.yaw_angle)),
-                aircraft.position[1] + self.bounding_box_resolution[1] * sin(radians(aircraft.yaw_angle)))
+                aircraft.position[0] + 1000 * cos(radians(aircraft.yaw_angle)),
+                aircraft.position[1] + 1000 * sin(radians(aircraft.yaw_angle)))
             self.scene.addItem(yaw_angle_line)
 
             course_line = QGraphicsLineItem(
                 aircraft.position[0],
                 aircraft.position[1],
-                aircraft.position[0] + self.bounding_box_resolution[0] * cos(radians(aircraft.course)),
-                aircraft.position[1] + self.bounding_box_resolution[1] * sin(radians(aircraft.course)))
+                aircraft.position[0] + 1000 * cos(radians(aircraft.course)),
+                aircraft.position[1] + 1000 * sin(radians(aircraft.course)))
             self.scene.addItem(course_line)
 
         self.view.setScene(self.scene)
