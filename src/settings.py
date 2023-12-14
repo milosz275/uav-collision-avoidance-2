@@ -4,11 +4,11 @@ class Settings:
     refresh_rate = 60  # default refresh rate
 
     @classmethod
-    def set_resolution(self, width, height):
+    def set_resolution(cls, width, height):
         """Sets the resolution"""
-        self.resolution = (width, height)
+        cls.resolution = (width - 10, height - 10)
 
     @classmethod
-    def set_refresh_rate(self, rate):
+    def set_refresh_rate(cls, rate):
         """Sets the refresh rate"""
-        self.refresh_rate = rate
+        cls.refresh_rate = rate

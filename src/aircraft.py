@@ -10,8 +10,9 @@ class Aircraft:
     speed : float = 100.0
     course : float = 0.0
     max_course_change : float = 2.5
-    position : QVector2D = (0, 0)
+    position : QVector2D = QVector2D(0, 0)
     size : float = 10.0
+    # todo: safe area
 
     def __init__(self, id, position, yaw_angle, speed, course, size):
         """Initializes the aircraft"""
@@ -22,7 +23,7 @@ class Aircraft:
         self.course = course
         self.size = size
 
-    def set_course(self, course):
+    def update_course(self, course):
         """Applies gradual change to yaw angle respecting set course"""
         # todo: replace with algorithm
         abs_course = course
@@ -51,7 +52,7 @@ class Aircraft:
 
     def update_position(self):
         """Updates position of the aircraft, applies smooth course adjustment"""
-        self.set_course(self.course)
+        self.update_course(self.course)
 
         # todo: change to matrix
         self.position[0] += self.speed * cos(radians(self.yaw_angle))
