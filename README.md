@@ -17,10 +17,7 @@ pip install -r requirements.txt
 python main.py
 ```
 ## Interaction
-The simulator defaults to showcase mode where there is no way to interact with the app other than closing it with Escape or Ctrl+C. Debug mode can be activated using tilde
-$$
-\sim
-$$.
+The simulator defaults to showcase mode where there is no way to interact with the app other than closing it with Escape or Ctrl+C. Debug mode can be activated using tilde ~
 ### Shortcuts
 1. General
 - / - pause the simulation
