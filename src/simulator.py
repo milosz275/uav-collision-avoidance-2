@@ -1,6 +1,6 @@
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem
-from PyQt6.QtGui import QPen, QPainter, QVector2D, QKeySequence
+from PyQt6.QtGui import QPen, QKeySequence
 from src.aircraft import Aircraft
 from src.settings import Settings
 from math import radians, sin, cos
