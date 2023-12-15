@@ -1,6 +1,6 @@
 class Settings:
     """Settings"""
-    resolution = (1000, 800)  # default resolution
+    resolution = (1100, 900)  # default resolution
     refresh_rate = 60  # default refresh rate
 
     @classmethod

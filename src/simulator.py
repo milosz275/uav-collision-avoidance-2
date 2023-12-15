@@ -1,5 +1,6 @@
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem
+from PyQt6.QtGui import QPen, QPainter, QVector2D, QKeySequence
 from src.aircraft import Aircraft
 from src.settings import Settings
 from math import radians, sin, cos
@@ -20,25 +21,31 @@ class Simulator(QMainWindow):
         self.view = QGraphicsView(self.scene, self)
         self.setCentralWidget(self.view)
 
-        self.aircrafts = []
-        self.reset_simulation()
-
-        self.iterator : int = 0
+        self.debug : bool = True
+        self.display_info : bool = True
+        self.display_course_trajectory : bool = True
+        self.display_yaw_trajectory : bool = True
+        self.display_safezone : bool = True
+        self.display_paths : bool = True
 
         self.gui_timer = QTimer(self)
         self.simulation_timer = QTimer(self)
         self.gui_timer.timeout.connect(self.render_scene)
         self.simulation_timer.timeout.connect(self.update_simulation)
+        self.gui_timer.start(1000 // self.refresh_rate) # frame time
         
-        self.start_simulation()
-
         self.is_finished : bool = False
+        self.aircrafts : list(Aircraft) = []
+        self.reset_simulation()
+        self.start_simulation()
         self.show()
 
     def update_simulation(self):
         """Updates simulation looping through aircrafts, checks collisions with another objects and with simulation boundaries"""
         for aircraft in self.aircrafts:
             aircraft.update_position()
+
+        self.check_safezones()
 
         self.is_finished = self.check_collision()
         if self.is_finished:
@@ -48,9 +55,9 @@ class Simulator(QMainWindow):
         if self.is_finished:
             return
         
-        self.avoid_collisions()
+        self.avoaircraft_id_collisions()
 
-    def avoid_collisions(self):
+    def avoaircraft_id_collisions(self):
         """Detects and schedules avoid maneuver for each aircraft"""
         # todo: implement
         return
@@ -58,29 +65,52 @@ class Simulator(QMainWindow):
     def reset_simulation(self):
         """R"""
         for aircraft in self.aircrafts:
-            self.aircrafts.remove(aircraft)
+            aircraft.path.clear()
+        self.aircrafts.clear() 
         self.aircrafts = [
             Aircraft(0, position=[100, 200], yaw_angle=340, speed=4, course=45),
-            Aircraft(1, position=[700, 200], yaw_angle=135, speed=4, course=145)
+            # Aircraft(1, position=[700, 200], yaw_angle=135, speed=4, course=145),
+            # Aircraft(2, position=[300, 500], yaw_angle=270, speed=4, course=270)
         ]
 
     def start_simulation(self):
         """Starts all timers"""
-        self.gui_timer.start(1000 // self.refresh_rate) # frame time
+        self.is_finished = False
+        #self.gui_timer.start(1000 // self.refresh_rate) # frame time
         self.simulation_timer.start(30) # simulation speed
     
     def stop_simulation(self):
         """Stops all timers"""
         self.simulation_timer.stop()
-        self.gui_timer.stop()
+        #self.gui_timer.stop()
+        self.is_finished = True
+
+    def calculate_points_distance(self, x1 : float, y1 : float, x2 : float, y2 : float):
+        """Returns distance between two points"""
+        return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
+
+    def check_safezones(self):
+        """A"""
+        for i in range(len(self.aircrafts) - 1):
+            for j in range(i + 1, len(self.aircrafts)):
+                distance = self.calculate_points_distance(*self.aircrafts[i].position, *self.aircrafts[j].position)
+                if distance <= self.aircrafts[i].safezone_size / 2:
+                    if not self.aircrafts[i].safezone_occupied:
+                        self.aircrafts[i].safezone_occupied = True
+                        print("Some object entered safezone of Aircraft ", self.aircrafts[i].aircraft_id)
+                else:
+                    if self.aircrafts[i].safezone_occupied:
+                        self.aircrafts[i].safezone_occupied = False
+                        print("Some object left safezone of Aircraft ", self.aircrafts[i].aircraft_id)
+                # j aircraft
+        return False
 
     def check_collision(self):
         """Checks and returns if any of the aircrafts collided with each other"""
         for i in range(len(self.aircrafts) - 1):
             for j in range(i + 1, len(self.aircrafts)):
-                distance = ((self.aircrafts[i].position[0] - self.aircrafts[j].position[0]) ** 2 +
-                            (self.aircrafts[i].position[1] - self.aircrafts[j].position[1]) ** 2) ** 0.5
-                if distance < ((self.aircrafts[i].size + self.aircrafts[j].size) / 2):
+                distance = self.calculate_points_distance(*self.aircrafts[i].position, *self.aircrafts[j].position)
+                if distance <= ((self.aircrafts[i].size + self.aircrafts[j].size) / 2):
                     self.stop_simulation()
                     print("Aircrafts collided. Simulation stopped")
                     return True
@@ -117,35 +147,90 @@ class Simulator(QMainWindow):
             self.scene.addItem(text_item)
 
         for aircraft in self.aircrafts:
-            circle = QGraphicsEllipseItem(
+            # aircraft representation
+            aircraft_circle = QGraphicsEllipseItem(
                 aircraft.position[0] - aircraft.size / 2,
                 aircraft.position[1] - aircraft.size / 2,
                 aircraft.size,
                 aircraft.size)
-            self.scene.addItem(circle)
+            self.scene.addItem(aircraft_circle)
+            aircraft.path.append((aircraft.position[0], aircraft.position[1]))
 
-            yaw_angle_line = QGraphicsLineItem(
-                aircraft.position[0],
-                aircraft.position[1],
-                aircraft.position[0] + 1000 * cos(radians(aircraft.yaw_angle)),
-                aircraft.position[1] + 1000 * sin(radians(aircraft.yaw_angle)))
-            self.scene.addItem(yaw_angle_line)
+            if self.debug:
+                # info label
+                if self.display_info:
+                    info_text = f"id: {aircraft.aircraft_id}\nx: {aircraft.position[0]:.2f}\ny: {aircraft.position[1]:.2f}\nspeed: {aircraft.speed}\ncourse: {aircraft.course:.1f}\nyaw: {aircraft.yaw_angle:.1f}"
+                    text_item = QGraphicsSimpleTextItem(info_text)
+                    text_item.setPos(-60 + 100 * (aircraft.aircraft_id + 1), 30)
+                    self.scene.addItem(text_item)
 
-            course_line = QGraphicsLineItem(
-                aircraft.position[0],
-                aircraft.position[1],
-                aircraft.position[0] + 1000 * cos(radians(aircraft.course)),
-                aircraft.position[1] + 1000 * sin(radians(aircraft.course)))
-            self.scene.addItem(course_line)
+                # travelled path
+                # todo: fix when more than 1 aircraft
+                if self.display_paths:
+                    if len(aircraft.path) > 1:
+                        for i in range(len(aircraft.path) - 1):
+                            point1 = aircraft.path[i]
+                            point2 = aircraft.path[i + 1]
+                            path_line = QGraphicsLineItem(point1[0], point1[1], point2[0], point2[1])
+                            pen : QPen
+                            if aircraft.aircraft_id == 0:
+                                pen = QPen(Qt.GlobalColor.darkGreen)
+                            elif aircraft.aircraft_id == 0:
+                                pen = QPen(Qt.GlobalColor.blue)
+                            else:
+                                pen = QPen(Qt.GlobalColor.cyan)
+                            pen.setWidth(1)
+                            path_line.setPen(pen)
+                            self.scene.addItem(path_line)
+
+                # safezone around the aircraft
+                if self.display_safezone:
+                    aircraft_safezone_circle = QGraphicsEllipseItem(
+                        aircraft.position[0] - aircraft.safezone_size / 2,
+                        aircraft.position[1] - aircraft.safezone_size / 2,
+                        aircraft.safezone_size,
+                        aircraft.safezone_size)
+                    self.scene.addItem(aircraft_safezone_circle)
+
+                # angles of movement
+                if self.display_yaw_trajectory:
+                    yaw_angle_line = QGraphicsLineItem(
+                        aircraft.position[0],
+                        aircraft.position[1],
+                        aircraft.position[0] + 1000 * cos(radians(aircraft.yaw_angle)),
+                        aircraft.position[1] + 1000 * sin(radians(aircraft.yaw_angle)))
+                    yaw_angle_line.setPen(QPen(Qt.GlobalColor.red))
+                    self.scene.addItem(yaw_angle_line)
+                if self.display_course_trajectory:
+                    course_line = QGraphicsLineItem(
+                        aircraft.position[0],
+                        aircraft.position[1],
+                        aircraft.position[0] + 1000 * cos(radians(aircraft.course)),
+                        aircraft.position[1] + 1000 * sin(radians(aircraft.course)))
+                    if aircraft.course % 45 == 0 and not aircraft.course % 90 == 0:
+                        course_line.setPen(QPen(Qt.GlobalColor.green))
+                    self.scene.addItem(course_line)
 
         self.view.setScene(self.scene)
         self.view.setSceneRect(0, 0, *self.resolution)
 
     def keyPressEvent(self, event):
-        """Qt method that handles keypress events for steering the first aircraft and simulation state"""
+        """Qt method that handles keypress events for steering the aircrafts and simulation state"""
+        
+        if QKeySequence(event.key()).toString() == "`":
+            self.debug ^= 1
+        
+        # ctrl + button
         if event.modifiers() and Qt.KeyboardModifier.ControlModifier:
             if event.key() == Qt.Key.Key_C:
                 self.close()
+        if event.key() == Qt.Key.Key_Escape:
+            self.close()
+
+        if not self.debug:
+            return super().keyPressEvent(event)
+        
+        # first aircraft steering
         if len(self.aircrafts) >= 1:
             if event.key() == Qt.Key.Key_D:
                 self.aircrafts[0].course = 0
@@ -155,6 +240,25 @@ class Simulator(QMainWindow):
                 self.aircrafts[0].course = 180
             elif event.key() == Qt.Key.Key_W:
                 self.aircrafts[0].course = 270
+            elif event.key() == Qt.Key.Key_F2:
+                if self.aircrafts[0].speed > 1:
+                    self.aircrafts[0].speed -= 1
+            elif event.key() == Qt.Key.Key_F3:
+                self.aircrafts[0].speed += 1
+            elif event.key() == Qt.Key.Key_Y:
+                course = self.aircrafts[0].course
+                course -= self.aircrafts[0].max_course_change * 2
+                if course < 0:
+                    course += 360
+                self.aircrafts[0].course = course
+            elif event.key() == Qt.Key.Key_U:
+                course = self.aircrafts[0].course
+                course += self.aircrafts[0].max_course_change * 2
+                if course >= 360:
+                    course -= 360
+                self.aircrafts[0].course = course
+        
+        # second aircraft steering
         if len(self.aircrafts) >= 2:
             if event.key() == Qt.Key.Key_L:
                 self.aircrafts[1].course = 0
@@ -164,9 +268,45 @@ class Simulator(QMainWindow):
                 self.aircrafts[1].course = 180
             elif event.key() == Qt.Key.Key_I:
                 self.aircrafts[1].course = 270
+            elif event.key() == Qt.Key.Key_F6:
+                if self.aircrafts[1].speed > 1:
+                    self.aircrafts[1].speed -= 1
+            elif event.key() == Qt.Key.Key_F7:
+                self.aircrafts[1].speed += 1
+            elif event.key() == Qt.Key.Key_O:
+                course = self.aircrafts[1].course
+                course -= self.aircrafts[1].max_course_change * 2
+                if course < 0:
+                    course += 360
+                self.aircrafts[1].course = course
+            elif event.key() == Qt.Key.Key_P:
+                course = self.aircrafts[1].course
+                course += self.aircrafts[1].max_course_change * 2
+                if course >= 360:
+                    course -= 360
+                self.aircrafts[1].course = course
+        
+        # shortcuts for every case
         if event.key() == Qt.Key.Key_R:
             self.stop_simulation()
             self.reset_simulation()
             self.start_simulation()
+        elif event.key() == Qt.Key.Key_Slash:
+            if self.is_finished:
+                self.start_simulation()
+            else:
+                self.stop_simulation()
+        elif event.key() == Qt.Key.Key_1:
+            self.display_info ^= 1
+        elif event.key() == Qt.Key.Key_2:
+            self.display_course_trajectory ^= 1
+        elif event.key() == Qt.Key.Key_3:
+            self.display_yaw_trajectory ^= 1
+        elif event.key() == Qt.Key.Key_4:
+            self.display_safezone ^= 1
+        elif event.key() == Qt.Key.Key_5:
+            self.display_paths ^= 1
+        elif event.key() == Qt.Key.Key_6:
+            pass
 
         return super().keyPressEvent(event)

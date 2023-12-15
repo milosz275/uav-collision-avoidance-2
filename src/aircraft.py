@@ -3,7 +3,7 @@ from math import cos, sin, radians
 
 class Aircraft:
     """Aircraft"""
-    id: int
+    aircraft_id: int
     yaw_angle : float = 0.0
     pitch_angle : float = 0.0
     roll_angle : float = 0.0
@@ -12,11 +12,13 @@ class Aircraft:
     max_course_change : float = 2.5
     position : QVector2D = QVector2D(0, 0)
     size : float = 50.0
-    # todo: safe area
+    safezone_size : float = 350.0
+    safezone_occupied: bool = False
+    path = []
 
-    def __init__(self, id, position, yaw_angle, speed, course):
+    def __init__(self, aircraft_id, position, yaw_angle, speed, course):
         """Initializes the aircraft"""
-        self.id = id
+        self.aircraft_id = aircraft_id
         self.position = position
         self.speed = speed
         self.yaw_angle = yaw_angle
