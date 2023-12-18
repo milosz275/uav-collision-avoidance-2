@@ -156,8 +156,8 @@ class Simulator(QMainWindow):
             self.scene.addItem(aircraft_circle)
             aircraft.path.append((aircraft.position[0], aircraft.position[1]))
             # prevent lag
-            if len(aircraft.path) == 750:
-                aircraft.path.clear()
+            if len(aircraft.path) == 500:
+                del aircraft.path[0]
 
             if self.debug:
                 # info label
