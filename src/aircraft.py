@@ -1,5 +1,6 @@
 from PyQt6.QtGui import QVector2D
 from math import cos, sin, radians
+from typing import List
 
 class Aircraft:
     """Aircraft"""
@@ -14,7 +15,7 @@ class Aircraft:
     size : float = 50.0
     safezone_size : float = 350.0
     safezone_occupied: bool = False
-    path = []
+    path: List[QVector2D]
 
     def __init__(self, aircraft_id, position, yaw_angle, speed, course):
         """Initializes the aircraft"""
@@ -23,6 +24,7 @@ class Aircraft:
         self.speed = speed
         self.yaw_angle = yaw_angle
         self.course = course
+        self.path = []
 
     def update_course(self, course):
         """Applies gradual change to yaw angle respecting set course"""

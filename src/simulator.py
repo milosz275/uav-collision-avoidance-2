@@ -69,7 +69,7 @@ class Simulator(QMainWindow):
         self.aircrafts.clear() 
         self.aircrafts = [
             Aircraft(0, position=[100, 200], yaw_angle=340, speed=4, course=45),
-            # Aircraft(1, position=[700, 200], yaw_angle=135, speed=4, course=145),
+            Aircraft(1, position=[700, 200], yaw_angle=135, speed=4, course=145),
             # Aircraft(2, position=[300, 500], yaw_angle=270, speed=4, course=270)
         ]
 
@@ -155,6 +155,9 @@ class Simulator(QMainWindow):
                 aircraft.size)
             self.scene.addItem(aircraft_circle)
             aircraft.path.append((aircraft.position[0], aircraft.position[1]))
+            # prevent lag
+            if len(aircraft.path) == 750:
+                aircraft.path.clear()
 
             if self.debug:
                 # info label
@@ -174,8 +177,8 @@ class Simulator(QMainWindow):
                             path_line = QGraphicsLineItem(point1[0], point1[1], point2[0], point2[1])
                             pen : QPen
                             if aircraft.aircraft_id == 0:
-                                pen = QPen(Qt.GlobalColor.darkGreen)
-                            elif aircraft.aircraft_id == 0:
+                                pen = QPen(Qt.GlobalColor.magenta)
+                            elif aircraft.aircraft_id == 1:
                                 pen = QPen(Qt.GlobalColor.blue)
                             else:
                                 pen = QPen(Qt.GlobalColor.cyan)
