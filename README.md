@@ -1,4 +1,5 @@
 # 2d-uav-sim
+Project implements simple application simulating flight of two independent UAVs utilizing collision avoidance algorithm in order to prevent aircraft crashing into each other.
 ## Running the app
 In order to run the App you need to have python installed including pip and venv.
 After cloning, run following commands in the project directory
