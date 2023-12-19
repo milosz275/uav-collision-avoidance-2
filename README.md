@@ -1,5 +1,5 @@
 # 2D UAV Flight Simulator
-Project implements simple Python3 application simulating flight of two independent UAVs utilizing collision avoidance algorithm in order to prevent aircraft crashing into each other. GUI is represented using PyQt6 library.
+Project implements simple Python3 application simulating flight of two independent UAVs utilizing collision avoidance algorithm in order to prevent aircraft crashing into each other. GUI is represented using PyQt6[^1] library.
 > [!NOTE]
 > Project considers two aircrafts only
 ## Running the app
@@ -19,6 +19,8 @@ source ./venv/bin/activate
 pip install -r requirements.txt
 python main.py
 ```
+> [!IMPORTANT]
+> This process may vary depending on the OS used.
 ## Interaction
 The simulator defaults to showcase mode where there is no way to interact with the app other than closing it with Escape or Ctrl+C. Debug mode can be activated using tilde ~
 ### Shortcuts
@@ -49,3 +51,5 @@ The simulator defaults to showcase mode where there is no way to interact with t
         - P - increase course by small iterator
         - F6 - slow the aircraft down
         - F7 - speed the aircraft up
+
+[^1]: https://pypi.org/project/PyQt6/
