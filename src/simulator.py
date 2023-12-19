@@ -29,11 +29,13 @@ class Simulator(QMainWindow):
         self.display_safezone : bool = True
         self.display_paths : bool = True
 
+        self.frame_time : float = 1000 // self.refresh_rate # in miliseconds
+        self.simulation_threshold = 30 # in miliseconds
         self.gui_timer = QTimer(self)
         self.simulation_timer = QTimer(self)
         self.gui_timer.timeout.connect(self.render_scene)
         self.simulation_timer.timeout.connect(self.update_simulation)
-        self.gui_timer.start(1000 // self.refresh_rate) # frame time
+        self.gui_timer.start(self.frame_time) # frame time
         
         self.is_finished : bool = False
         self.aircrafts : list(Aircraft) = []
@@ -79,7 +81,7 @@ class Simulator(QMainWindow):
     def start_simulation(self) -> None:
         """Starts all timers"""
         self.is_finished = False
-        self.simulation_timer.start(30) # simulation speed
+        self.simulation_timer.start(self.simulation_threshold)
         return
     
     def stop_simulation(self) -> None:
@@ -166,12 +168,6 @@ class Simulator(QMainWindow):
             if aircraft.safezone_occupied:
                 aircraft_circle.setPen(QPen(Qt.GlobalColor.gray))
             self.scene.addItem(aircraft_circle)
-
-            # path lag handling
-            if not self.is_finished:
-                aircraft.path.append((aircraft.position[0], aircraft.position[1]))
-            if len(aircraft.path) == 500:
-                del aircraft.path[0]
 
             if self.debug:
                 # info label

@@ -1,31 +1,36 @@
 from PyQt6.QtGui import QVector2D
-from math import cos, sin, radians
 from typing import List
+from math import cos, sin, radians
+from copy import copy
 from src.maths import Maths
 
 class Aircraft:
     """Aircraft"""
     aircraft_id: int
-    yaw_angle : float = 0.0
-    pitch_angle : float = 0.0
-    roll_angle : float = 0.0
-    speed : float = 100.0
-    course : float = 0.0
-    distance_covered : float = 0.0
-    max_course_change : float = 2.5
-    position : QVector2D = QVector2D(0, 0)
+    yaw_angle : float
+    pitch_angle : float
+    roll_angle : float
+    speed : float
+    course : float
+    position : QVector2D
+    distance_covered : float
     size : float = 50.0
+    max_course_change : float = 2.5
     safezone_size : float = 350.0
-    safezone_occupied: bool = False
+    safezone_occupied: bool
     path: List[QVector2D]
 
     def __init__(self, aircraft_id, position, yaw_angle, speed, course) -> None:
         """Initializes the aircraft"""
         self.aircraft_id = aircraft_id
-        self.position = position
-        self.speed = speed
         self.yaw_angle = yaw_angle
+        self.pitch_angle = 0.0
+        self.roll_angle = 0.0
+        self.speed = speed
         self.course = course
+        self.position = position
+        self.distance_covered = 0.0
+        self.safezone_occupied = False
         self.path = []
 
     def update_course(self, course) -> None:
@@ -60,8 +65,14 @@ class Aircraft:
         self.update_course(self.course)
 
         # todo: change to matrix
-        previous_position = self.position
+        previous_position : QVector2D = copy(self.position)
         self.position[0] += self.speed * cos(radians(self.yaw_angle))
         self.position[1] += self.speed * sin(radians(self.yaw_angle))
         self.distance_covered += Maths.calculate_points_distance(previous_position, self.position)
+       
+        # path update
+        self.path.append(copy(self.position))
+        if len(self.path) == 150:
+            del self.path[0]
+
         return
