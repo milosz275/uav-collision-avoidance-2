@@ -51,7 +51,7 @@ The simulator defaults to showcase mode where there is no way to interact with t
         - P - increase course by small iterator
         - F6 - slow the aircraft down
         - F7 - speed the aircraft up
-### Progress
+## Progress
 - [x] Run simulation and Gui separately
 - [x] Add smooth angle transition
 - [x] Add safezones and its handling
