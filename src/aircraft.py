@@ -30,7 +30,7 @@ class Aircraft:
         self.course = course
         self.position = position
         self.distance_covered = 0.0
-        self.safezone_occupied = False
+        self.safezone_occupied = False # todo: change to int
         self.path = []
 
     def update_course(self, course) -> None:

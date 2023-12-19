@@ -4,7 +4,7 @@ from PyQt6.QtGui import QPen, QKeySequence
 from src.maths import Maths
 from src.aircraft import Aircraft
 from src.settings import Settings
-from math import radians, sin, cos
+from math import radians, sin, cos, atan2, degrees
 
 class Simulator(QMainWindow):
     """Main simulation App"""
@@ -28,6 +28,7 @@ class Simulator(QMainWindow):
         self.display_yaw_trajectory : bool = True
         self.display_safezone : bool = True
         self.display_paths : bool = True
+        self.cause_crash_second : bool = True
 
         self.frame_time : float = 1000 // self.refresh_rate # in miliseconds
         self.simulation_threshold = 30 # in miliseconds
@@ -56,9 +57,14 @@ class Simulator(QMainWindow):
             return
         
         self.is_finished = self.check_offscreen()
+        if self.is_finished:
+            return
+        
+        if self.cause_crash_second:
+            self.cause_collision()
         return
 
-    def avoid_aircraft_collisions(self, aircraft_id : int) -> None:
+    def avoid_aircraft_collision(self, aircraft_id : int) -> None:
         """Detects and schedules avoid maneuver for each aircraft"""
         aircraft = self.aircrafts[aircraft_id]
         if not aircraft.aircraft_id == aircraft_id:
@@ -91,25 +97,23 @@ class Simulator(QMainWindow):
         return
 
     def check_safezones(self) -> None:
-        """Checks if safezones are entered by another aircraft"""
+        """Checks if safezones are entered by another aircrafts"""
         for i in range(len(self.aircrafts) - 1):
             for j in range(i + 1, len(self.aircrafts)):
                 distance = Maths.calculate_points_distance(self.aircrafts[i].position, self.aircrafts[j].position)
-                # first
                 if distance <= self.aircrafts[i].safezone_size / 2:
                     if not self.aircrafts[i].safezone_occupied:
                         self.aircrafts[i].safezone_occupied = True
-                        self.avoid_aircraft_collisions(self.aircrafts[i].aircraft_id)
+                        self.avoid_aircraft_collision(self.aircrafts[i].aircraft_id)
                         print("Some object entered safezone of Aircraft ", self.aircrafts[i].aircraft_id)
                 else:
                     if self.aircrafts[i].safezone_occupied:
                         self.aircrafts[i].safezone_occupied = False
                         print("Some object left safezone of Aircraft ", self.aircrafts[i].aircraft_id)
-                # second
                 if distance <= self.aircrafts[j].safezone_size / 2:
                     if not self.aircrafts[j].safezone_occupied:
                         self.aircrafts[j].safezone_occupied = True
-                        self.avoid_aircraft_collisions(self.aircrafts[j].aircraft_id)
+                        self.avoid_aircraft_collision(self.aircrafts[j].aircraft_id)
                         print("Some object entered safezone of Aircraft ", self.aircrafts[j].aircraft_id)
                 else:
                     if self.aircrafts[j].safezone_occupied:
@@ -136,6 +140,19 @@ class Simulator(QMainWindow):
                 print("Aircraft left simulation boundaries. Simulation stopped")
                 return True
         return False
+    
+    def cause_collision(self) -> None:
+        """Test method allowing to crash second aircraft into the first"""
+        if len(self.aircrafts) >= 2:
+            aircraft = self.aircrafts[1]
+            target_aircraft = self.aircrafts[0]
+            delta_x = target_aircraft.position[0] - aircraft.position[0]
+            delta_y = target_aircraft.position[1] - aircraft.position[1]
+            angle_rad = atan2(delta_y, delta_x)
+            angle_deg = degrees(angle_rad)
+            angle_deg %= 360
+            aircraft.course = angle_deg
+            return
 
     def render_scene(self) -> None:
         """Render the scene with aircrafts as circles, bounding box and ruler marks"""
@@ -326,6 +343,6 @@ class Simulator(QMainWindow):
         elif event.key() == Qt.Key.Key_5:
             self.display_paths ^= 1
         elif event.key() == Qt.Key.Key_6:
-            pass
+            self.cause_crash_second ^= 1
 
         return super().keyPressEvent(event)
