@@ -69,10 +69,4 @@ class Aircraft:
         self.position[0] += self.speed * cos(radians(self.yaw_angle))
         self.position[1] += self.speed * sin(radians(self.yaw_angle))
         self.distance_covered += Maths.calculate_points_distance(previous_position, self.position)
-       
-        # path update
-        self.path.append(copy(self.position))
-        if len(self.path) == 150:
-            del self.path[0]
-
         return

@@ -5,6 +5,7 @@ from src.maths import Maths
 from src.aircraft import Aircraft
 from src.settings import Settings
 from math import radians, sin, cos, atan2, degrees
+from copy import copy
 
 class Simulator(QMainWindow):
     """Main simulation App"""
@@ -28,16 +29,17 @@ class Simulator(QMainWindow):
         self.display_yaw_trajectory : bool = True
         self.display_safezone : bool = True
         self.display_paths : bool = True
-        self.cause_crash_second : bool = True
+        self.cause_crash_second : bool = False
 
         self.frame_time : float = 1000 // self.refresh_rate # in miliseconds
-        self.simulation_threshold = 30 # in miliseconds
+        self.simulation_threshold = self.frame_time # in miliseconds
         self.gui_timer = QTimer(self)
         self.simulation_timer = QTimer(self)
         self.gui_timer.timeout.connect(self.render_scene)
         self.simulation_timer.timeout.connect(self.update_simulation)
         self.gui_timer.start(self.frame_time) # frame time
         
+        self.frame_counter : int = 0
         self.is_finished : bool = False
         self.aircrafts : list(Aircraft) = []
         self.reset_simulation()
@@ -79,8 +81,8 @@ class Simulator(QMainWindow):
             aircraft.path.clear()
         self.aircrafts.clear() 
         self.aircrafts = [
-            Aircraft(0, position=[100, 200], yaw_angle=340, speed=4, course=45),
-            Aircraft(1, position=[700, 200], yaw_angle=135, speed=4, course=145)
+            Aircraft(0, position=[100, 200], yaw_angle=340, speed=2, course=45),
+            Aircraft(1, position=[700, 200], yaw_angle=135, speed=2, course=145)
         ]
         return
 
@@ -175,6 +177,14 @@ class Simulator(QMainWindow):
             text_item.setPos(-25, y - 10)
             self.scene.addItem(text_item)
 
+        # path update planning
+        append_to_paths : bool = False
+        if not self.is_finished:
+            self.frame_counter += 1
+            if self.frame_counter == 3:
+                self.frame_counter = 0
+                append_to_paths = True  
+
         for aircraft in self.aircrafts:
             # aircraft representation
             aircraft_circle = QGraphicsEllipseItem(
@@ -185,6 +195,12 @@ class Simulator(QMainWindow):
             if aircraft.safezone_occupied:
                 aircraft_circle.setPen(QPen(Qt.GlobalColor.gray))
             self.scene.addItem(aircraft_circle)
+
+            # path update
+            if append_to_paths:
+                aircraft.path.append(copy(aircraft.position))
+                if len(aircraft.path) == 100:
+                    del aircraft.path[0]
 
             if self.debug:
                 # info label
