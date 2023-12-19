@@ -1,10 +1,12 @@
 # 2D UAV Flight Simulator
 Project implements simple Python3 application simulating flight of two independent UAVs utilizing collision avoidance algorithm in order to prevent aircraft crashing into each other. GUI is represented using PyQt6[^1] library.
 > [!NOTE]
-> Project considers two aircrafts only
+> Project considers two aircrafts only.
 ## Running the app
 In order to run the App you need to have Python3 installed including pip and PyQt6. This instruction makes use of venv/virtualenv avoiding need of installing whole PyQt library.
 After cloning, run following commands in the project directory
+> [!NOTE]
+> Using venv in Windows requires script running policy.
 ### Windows
 ```
 python -m venv venv
