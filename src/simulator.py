@@ -4,6 +4,7 @@ from PyQt6.QtGui import QPen, QKeySequence, QPixmap, QTransform, QVector2D
 from src.maths import Maths
 from src.aircraft import Aircraft
 from src.settings import Settings
+from src.fps_counter import FPSCounter
 from math import radians, sin, cos, atan2, degrees
 
 class Simulator(QMainWindow):
@@ -23,7 +24,8 @@ class Simulator(QMainWindow):
         self.setCentralWidget(self.view)
 
         self.debug : bool = True
-        self.display_info : int = 2 # 0 - not displayed; 1 - displayed top left; 2 - displayed below aircraft
+        self.display_aircraft_info : int = 2 # 0 - not displayed; 1 - displayed top left; 2 - displayed below aircraft
+        self.display_program_info : bool = True
         self.display_course_trajectory : bool = True
         self.display_yaw_trajectory : bool = True
         self.display_safezone : bool = True
@@ -35,13 +37,17 @@ class Simulator(QMainWindow):
         self.aircraft_image.load("src/assets/aircraft.png")
 
         self.frame_time : float = 1000 // self.refresh_rate # in miliseconds
-        self.simulation_threshold = self.frame_time # in miliseconds
+        self.simulation_threshold : float = self.frame_time # in miliseconds
         self.gui_timer = QTimer(self)
         self.simulation_timer = QTimer(self)
+        self.gui_fps_counter = FPSCounter()
+        self.simulation_fps_counter = FPSCounter()
         self.gui_timer.timeout.connect(self.render_scene)
         self.simulation_timer.timeout.connect(self.update_simulation)
         self.gui_timer.start(self.frame_time)
-        
+        self.current_simulation_fps : float = 0.0
+    
+        self.is_stopped : bool = False
         self.is_finished : bool = False
         self.aircrafts : list(Aircraft) = []
         self.reset_simulation()
@@ -51,17 +57,18 @@ class Simulator(QMainWindow):
 
     def update_simulation(self) -> None:
         """Updates simulation looping through aircrafts, checks collisions with another objects and with simulation boundaries"""
+        self.current_simulation_fps = self.simulation_fps_counter.count_frame()
         for aircraft in self.aircrafts:
             aircraft.update_position()
 
         self.check_safezones()
 
-        self.is_finished = self.check_collision()
-        if self.is_finished:
+        self.is_stopped = self.check_collision()
+        if self.is_stopped:
             return
         
-        self.is_finished = self.check_offscreen()
-        if self.is_finished:
+        self.is_stopped = self.check_offscreen()
+        if self.is_stopped:
             return
         
         if self.cause_crash_second:
@@ -83,8 +90,8 @@ class Simulator(QMainWindow):
         # conflict detection
         relative_distance = Maths.calculate_relative_distance(self.aircrafts[aircraft_id].position, self.aircrafts[1 - aircraft_id].position)
         relative_distance_vector : QVector2D = Maths.calculate_relative_vector(self.aircrafts[aircraft_id].position, self.aircrafts[1 - aircraft_id].position)
-        print("Relative distance: ", relative_distance)
-        print("Relative distance vector: ", relative_distance_vector)
+        print(f"Relative distance: {relative_distance:.2f}")
+        print(f"Relative distance vector: {relative_distance_vector[0]:.2f}, {relative_distance_vector[1]:.2f}")
 
         # conflict resolution
         
@@ -99,18 +106,20 @@ class Simulator(QMainWindow):
             Aircraft(0, position=[100, 200], yaw_angle=340, speed=2, course=45),
             Aircraft(1, position=[700, 200], yaw_angle=135, speed=2, course=145)
         ]
+        self.is_finished = False
         return
 
     def start_simulation(self) -> None:
         """Starts all timers"""
-        self.is_finished = False
+        self.is_stopped = False
         self.simulation_timer.start(self.simulation_threshold)
         return
     
     def stop_simulation(self) -> None:
         """Stops all timers"""
         self.simulation_timer.stop()
-        self.is_finished = True
+        self.is_stopped = True
+        self.current_simulation_fps = 0.0
         return
 
     def check_safezones(self) -> None:
@@ -145,6 +154,7 @@ class Simulator(QMainWindow):
                 distance = Maths.calculate_relative_distance(self.aircrafts[i].position, self.aircrafts[j].position)
                 if distance <= ((self.aircrafts[i].size + self.aircrafts[j].size) / 2):
                     self.stop_simulation()
+                    self.is_finished = True
                     print("Aircrafts collided. Simulation stopped")
                     return True
         return False
@@ -154,6 +164,7 @@ class Simulator(QMainWindow):
         for aircraft in self.aircrafts:
             if not (0 + aircraft.size / 2 <= aircraft.position[0] <= self.resolution[0] - aircraft.size / 2 and 0 + aircraft.size / 2 <= aircraft.position[1] <= self.resolution[1] - aircraft.size / 2):
                 self.stop_simulation()
+                self.is_finished = True
                 print("Aircraft left simulation boundaries. Simulation stopped")
                 return True
         return False
@@ -173,6 +184,7 @@ class Simulator(QMainWindow):
 
     def render_scene(self) -> None:
         """Render the scene with aircrafts as circles, bounding box and ruler marks"""
+        fps : float = self.gui_fps_counter.count_frame()
         self.scene.clear()
 
         bounding_box = QGraphicsRectItem(0, 0, self.bounding_box_resolution[0], self.bounding_box_resolution[1])
@@ -193,15 +205,6 @@ class Simulator(QMainWindow):
             self.scene.addItem(text_item)
 
         for aircraft in self.aircrafts:
-            # hitbox representation
-            if self.display_hitboxes:
-                aircraft_circle = QGraphicsEllipseItem(
-                    aircraft.position[0] - aircraft.size / 2,
-                    aircraft.position[1] - aircraft.size / 2,
-                    aircraft.size,
-                    aircraft.size)
-                self.scene.addItem(aircraft_circle)
-            
             # aircraft representation
             aircraft_pixmap = QGraphicsPixmapItem(self.aircraft_image.scaled(40, 40))
             aircraft_pixmap.setPos(aircraft.position[0], aircraft.position[1])
@@ -217,13 +220,50 @@ class Simulator(QMainWindow):
             self.scene.addItem(aircraft_pixmap)
 
             if self.debug:
+                # version label
+                version_item = QGraphicsSimpleTextItem("DEBUG")
+                version_item.setPos(30, 30)
+                self.scene.addItem(version_item)
+
+                # gui fps
+                gui_fps_text = "Gui FPS: {:.2f}".format(fps)
+                gui_fps_item = QGraphicsSimpleTextItem(gui_fps_text)
+                gui_fps_item.setPos(self.bounding_box_resolution[0] - 80, self.bounding_box_resolution[1] - 40)
+                self.scene.addItem(gui_fps_item)
+
+                # simulation fps
+                simulation_fps_text = "Sim FPS: {:.2f}".format(self.current_simulation_fps)
+                simulation_fps_item = QGraphicsSimpleTextItem(simulation_fps_text)
+                simulation_fps_item.setPos(self.bounding_box_resolution[0] - 80, self.bounding_box_resolution[1] - 20)
+                self.scene.addItem(simulation_fps_item)
+
+                # toggled values labels
+                text_label = "Cause collision: {}".format("Yes" if self.cause_crash_second else "No")
+                collision_text_item = QGraphicsSimpleTextItem(text_label)
+                collision_text_item.setPos(self.bounding_box_resolution[0] - 110, 30)
+                self.scene.addItem(collision_text_item)
+                if self.is_stopped:
+                    text_label = "Simulation stopped"
+                    simulation_label = QGraphicsSimpleTextItem(text_label)
+                    simulation_label.setPos(self.bounding_box_resolution[0] - 110, 50)
+                    self.scene.addItem(simulation_label)
+
+                # hitbox representation
+                if self.display_hitboxes:
+                    aircraft_circle = QGraphicsEllipseItem(
+                        aircraft.position[0] - aircraft.size / 2,
+                        aircraft.position[1] - aircraft.size / 2,
+                        aircraft.size,
+                        aircraft.size)
+                    self.scene.addItem(aircraft_circle)
+
                 # info label
-                if self.display_info:
+                if self.display_aircraft_info:
                     info_text = f"id: {aircraft.aircraft_id}\nx: {aircraft.position[0]:.2f}\ny: {aircraft.position[1]:.2f}\nspeed: {aircraft.speed}\ndistance: {aircraft.distance_covered:.1f}\ncourse: {aircraft.course:.1f}\nyaw: {aircraft.yaw_angle:.1f}"
                     text_item = QGraphicsSimpleTextItem(info_text)
-                    if self.display_info == 1:
-                        text_item.setPos(-60 + 100 * (aircraft.aircraft_id + 1), 30)
-                    elif self.display_info == 2:
+                    if self.display_aircraft_info == 1:
+                        text_item.setPos(-80 + 110 * (aircraft.aircraft_id + 1), 60)
+                    elif self.display_aircraft_info == 2:
                         text_item.setPos(aircraft.position[0] -100, aircraft.position[1] -100)
                     self.scene.addItem(text_item)
 
@@ -276,6 +316,10 @@ class Simulator(QMainWindow):
                     if aircraft.course % 45 == 0 and not aircraft.course % 90 == 0:
                         course_line.setPen(QPen(Qt.GlobalColor.green))
                     self.scene.addItem(course_line)
+            else:
+                version_item = QGraphicsSimpleTextItem("RELEASE")
+                version_item.setPos(30, 30)
+                self.scene.addItem(version_item)
 
         self.view.setScene(self.scene)
         self.view.setSceneRect(0, 0, *self.resolution)
@@ -359,26 +403,32 @@ class Simulator(QMainWindow):
             self.reset_simulation()
             self.start_simulation()
         elif event.key() == Qt.Key.Key_Slash:
-            if self.is_finished:
-                self.start_simulation()
+            if not self.is_finished:
+                if self.is_stopped:
+                    self.start_simulation()
+                else:
+                    self.stop_simulation()
             else:
-                self.stop_simulation()
+                self.reset_simulation()
+                self.start_simulation()
         elif event.key() == Qt.Key.Key_1:
-            value = self.display_info + 1
+            value = self.display_aircraft_info + 1
             if value > 2:
                 value = 0
-            self.display_info = value
+            self.display_aircraft_info = value
         elif event.key() == Qt.Key.Key_2:
-            self.display_course_trajectory ^= 1
+            self.display_program_info ^= 1
         elif event.key() == Qt.Key.Key_3:
-            self.display_yaw_trajectory ^= 1
+            self.display_course_trajectory ^= 1
         elif event.key() == Qt.Key.Key_4:
-            self.display_safezone ^= 1
+            self.display_yaw_trajectory ^= 1
         elif event.key() == Qt.Key.Key_5:
-            self.display_paths ^= 1
+            self.display_safezone ^= 1
         elif event.key() == Qt.Key.Key_6:
-            self.cause_crash_second ^= 1
+            self.display_paths ^= 1
         elif event.key() == Qt.Key.Key_7:
+            self.cause_crash_second ^= 1
+        elif event.key() == Qt.Key.Key_8:
             self.display_hitboxes ^= 1
 
         return super().keyPressEvent(event)

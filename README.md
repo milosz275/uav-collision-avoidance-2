@@ -30,12 +30,13 @@ The simulator defaults to showcase mode where there is no way to interact with t
     - / - pause the simulation
     - R - reset the simulation
     - 1 - toggle aircraft info
-    - 2 - toggle course trajectory
-    - 3 - toggle yaw angle trajectory
-    - 4 - toggle safezone
-    - 5 - toggle distance covered (paths)
-    - 6 - toggle second aircraft targeting first to crash
-    - 7 - toggle hitboxes
+    - 2 - toggle app info
+    - 3 - toggle course trajectory
+    - 4 - toggle yaw angle trajectory
+    - 5 - toggle safezone
+    - 6 - toggle distance covered (paths)
+    - 7 - toggle second aircraft targeting first to crash
+    - 8 - toggle hitboxes
 2. Aircraft steering
     - First aircraft
         - W - set 270° course
