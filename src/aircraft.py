@@ -1,5 +1,5 @@
-from PyQt6.QtGui import QVector2D
-from PyQt6.QtCore import QPoint
+from PySide6.QtGui import QVector2D
+from PySide6.QtCore import QPoint
 from typing import List
 from math import cos, sin, radians
 from copy import copy
@@ -17,7 +17,7 @@ class Aircraft:
     distance_covered : float
     size : float = 40.0
     max_course_change : float = 2.5
-    safezone_size : float = 350.0
+    safezone_size : float = 1000.0
     safezone_occupied: bool
     path: List[QPoint]
     path_append_iterator : float

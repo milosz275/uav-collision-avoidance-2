@@ -1,6 +1,6 @@
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsPixmapItem
-from PyQt6.QtGui import QPen, QKeySequence, QPixmap, QTransform, QVector2D
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsPixmapItem
+from PySide6.QtGui import QPen, QKeySequence, QPixmap, QTransform, QVector2D
 from src.maths import Maths
 from src.aircraft import Aircraft
 from src.settings import Settings
@@ -24,10 +24,10 @@ class Simulator(QMainWindow):
         self.setCentralWidget(self.view)
 
         self.debug : bool = True
-        self.display_aircraft_info : int = 2 # 0 - not displayed; 1 - displayed top left; 2 - displayed below aircraft
+        self.display_aircraft_info : int = 1 # 0 - not displayed; 1 - displayed top left; 2 - displayed below aircraft
         self.display_program_info : bool = True
-        self.display_course_trajectory : bool = True
-        self.display_yaw_trajectory : bool = True
+        self.display_course_trajectory : bool = False
+        self.display_yaw_trajectory : bool = False
         self.display_safezone : bool = True
         self.display_paths : bool = True
         self.cause_crash_second : bool = False
@@ -91,7 +91,7 @@ class Simulator(QMainWindow):
         relative_distance = Maths.calculate_relative_distance(self.aircrafts[aircraft_id].position, self.aircrafts[1 - aircraft_id].position)
         relative_distance_vector : QVector2D = Maths.calculate_relative_vector(self.aircrafts[aircraft_id].position, self.aircrafts[1 - aircraft_id].position)
         print(f"Relative distance: {relative_distance:.2f}")
-        print(f"Relative distance vector: {relative_distance_vector[0]:.2f}, {relative_distance_vector[1]:.2f}")
+        print(f"Relative distance vector: {relative_distance_vector.x():.2f}, {relative_distance_vector.y():.2f}")
 
         # conflict resolution
         
@@ -103,8 +103,8 @@ class Simulator(QMainWindow):
             aircraft.path.clear()
         self.aircrafts.clear() 
         self.aircrafts = [
-            Aircraft(0, position=[100, 200], yaw_angle=340, speed=2, course=45),
-            Aircraft(1, position=[700, 200], yaw_angle=135, speed=2, course=145)
+            Aircraft(0, position=[100, 100], yaw_angle=45, speed=2, course=45),
+            Aircraft(1, position=[900, 100], yaw_angle=135, speed=2, course=135)
         ]
         self.is_finished = False
         return

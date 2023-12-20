@@ -1,5 +1,5 @@
-from PyQt6.QtGui import QVector2D
-from PyQt6.QtCore import QPoint
+from PySide6.QtGui import QVector2D
+from PySide6.QtCore import QPoint
 
 class Maths:
     """Math calculations"""

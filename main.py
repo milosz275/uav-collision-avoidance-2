@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 from src.simulator import Simulator
 
 def main():
