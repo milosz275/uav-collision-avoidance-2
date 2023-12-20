@@ -1,6 +1,6 @@
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsPixmapItem
-from PyQt6.QtGui import QPen, QKeySequence, QPixmap, QTransform
+from PyQt6.QtGui import QPen, QKeySequence, QPixmap, QTransform, QVector2D
 from src.maths import Maths
 from src.aircraft import Aircraft
 from src.settings import Settings
@@ -31,16 +31,16 @@ class Simulator(QMainWindow):
         self.cause_crash_second : bool = False
         self.display_hitboxes : bool = True
 
+        self.aircraft_image = QPixmap()
+        self.aircraft_image.load("src/assets/aircraft.png")
+
         self.frame_time : float = 1000 // self.refresh_rate # in miliseconds
         self.simulation_threshold = self.frame_time # in miliseconds
         self.gui_timer = QTimer(self)
         self.simulation_timer = QTimer(self)
         self.gui_timer.timeout.connect(self.render_scene)
         self.simulation_timer.timeout.connect(self.update_simulation)
-        self.gui_timer.start(self.frame_time) # frame time
-
-        self.aircraft_image = QPixmap()
-        self.aircraft_image.load("src/assets/aircraft.png")
+        self.gui_timer.start(self.frame_time)
         
         self.is_finished : bool = False
         self.aircrafts : list(Aircraft) = []
@@ -69,12 +69,25 @@ class Simulator(QMainWindow):
         return
 
     def avoid_aircraft_collision(self, aircraft_id : int) -> None:
-        """Detects and schedules avoid maneuver for each aircraft"""
+        """Detects and schedules avoid maneuver for given aircraft. Assumes two aircrafts"""
+        if not len(self.aircrafts) >= 1:
+            print("Collision avoidance method called but there are no possible collisions.")
+            return
+        elif not len(self.aircrafts) <= 2:
+            print("Collision avoidance method called but there are three or more aircrafts with possible collisions.")
+            return
         aircraft = self.aircrafts[aircraft_id]
         if not aircraft.aircraft_id == aircraft_id:
-            print("Aircraft ids are not the same. Closing...")
-            self.close()
-        # todo: implement algorithm
+            raise Exception("Aircraft ids are not the same. Closing...")
+        
+        # conflict detection
+        relative_distance = Maths.calculate_relative_distance(self.aircrafts[aircraft_id].position, self.aircrafts[1 - aircraft_id].position)
+        relative_distance_vector : QVector2D = Maths.calculate_relative_vector(self.aircrafts[aircraft_id].position, self.aircrafts[1 - aircraft_id].position)
+        print("Relative distance: ", relative_distance)
+        print("Relative distance vector: ", relative_distance_vector)
+
+        # conflict resolution
+        
         return
 
     def reset_simulation(self) -> None:
@@ -104,7 +117,7 @@ class Simulator(QMainWindow):
         """Checks if safezones are entered by another aircrafts"""
         for i in range(len(self.aircrafts) - 1):
             for j in range(i + 1, len(self.aircrafts)):
-                distance = Maths.calculate_points_distance(self.aircrafts[i].position, self.aircrafts[j].position)
+                distance = Maths.calculate_relative_distance(self.aircrafts[i].position, self.aircrafts[j].position)
                 if distance <= self.aircrafts[i].safezone_size / 2:
                     if not self.aircrafts[i].safezone_occupied:
                         self.aircrafts[i].safezone_occupied = True
@@ -129,7 +142,7 @@ class Simulator(QMainWindow):
         """Checks and returns if any of the aircrafts collided with each other"""
         for i in range(len(self.aircrafts) - 1):
             for j in range(i + 1, len(self.aircrafts)):
-                distance = Maths.calculate_points_distance(self.aircrafts[i].position, self.aircrafts[j].position)
+                distance = Maths.calculate_relative_distance(self.aircrafts[i].position, self.aircrafts[j].position)
                 if distance <= ((self.aircrafts[i].size + self.aircrafts[j].size) / 2):
                     self.stop_simulation()
                     print("Aircrafts collided. Simulation stopped")
