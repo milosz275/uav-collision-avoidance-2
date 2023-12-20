@@ -1,5 +1,4 @@
-from PySide6.QtGui import QVector2D
-from PySide6.QtCore import QPoint
+from PySide6.QtCore import QPointF
 from typing import List
 from math import cos, sin, radians
 from copy import copy
@@ -13,13 +12,13 @@ class Aircraft:
     roll_angle : float
     speed : float
     course : float
-    position : QVector2D
+    position : QPointF
     distance_covered : float
     size : float = 40.0
     max_course_change : float = 2.5
     safezone_size : float = 1000.0
     safezone_occupied: bool
-    path: List[QPoint]
+    path: List[QPointF]
     path_append_iterator : float
 
     def __init__(self, aircraft_id, position, yaw_angle, speed, course) -> None:
@@ -68,9 +67,9 @@ class Aircraft:
         self.update_course(self.course)
 
         # todo: change to matrix
-        previous_position : QVector2D = copy(self.position)
-        self.position[0] += self.speed * cos(radians(self.yaw_angle))
-        self.position[1] += self.speed * sin(radians(self.yaw_angle))
+        previous_position : QPointF = copy(self.position)
+        self.position.setX(self.position.x() + self.speed * cos(radians(self.yaw_angle)))
+        self.position.setY(self.position.y() + self.speed * sin(radians(self.yaw_angle)))
         distance = Maths.calculate_relative_distance(previous_position, self.position)
         self.distance_covered += distance
         self.path_append_iterator += distance

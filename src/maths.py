@@ -1,5 +1,5 @@
 from PySide6.QtGui import QVector2D
-from PySide6.QtCore import QPoint
+from PySide6.QtCore import QPointF
 
 class Maths:
     """Math calculations"""
@@ -10,11 +10,11 @@ class Maths:
         return number ** power
 
     @staticmethod
-    def calculate_relative_distance(first : QPoint, second : QPoint) -> float:
+    def calculate_relative_distance(first : QPointF, second : QPointF) -> float:
         """Returns distance between two points"""
-        return float(Maths.sqrt(number=((first[0] - second[0]) ** 2 + (first[1] - second[1]) ** 2)))
+        return float(Maths.sqrt((first.x() - second.x()) ** 2 + (first.y() - second.y()) ** 2))
 
     @staticmethod
-    def calculate_relative_vector(first : QPoint, second : QPoint) -> QVector2D:
+    def calculate_relative_vector(first : QPointF, second : QPointF) -> QVector2D:
         """Returns distance between two points"""
-        return QVector2D(first[0] - second[0], first[1] - second[1])
+        return QVector2D(first.x() - second.x(), first.y() - second.y())
