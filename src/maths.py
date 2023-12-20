@@ -12,4 +12,4 @@ class Maths:
     @staticmethod
     def calculate_relative_vector(first : QPoint, second : QPoint) -> QVector2D:
         """Returns distance between two points"""
-        return QVector2D((first[0] - second[0], first[1] - second[1]))
+        return QVector2D(first[0] - second[0], first[1] - second[1])
