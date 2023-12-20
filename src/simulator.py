@@ -1,11 +1,10 @@
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem
-from PyQt6.QtGui import QPen, QKeySequence
+from PyQt6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsPixmapItem
+from PyQt6.QtGui import QPen, QKeySequence, QPixmap, QTransform
 from src.maths import Maths
 from src.aircraft import Aircraft
 from src.settings import Settings
 from math import radians, sin, cos, atan2, degrees
-from copy import copy
 
 class Simulator(QMainWindow):
     """Main simulation App"""
@@ -30,6 +29,7 @@ class Simulator(QMainWindow):
         self.display_safezone : bool = True
         self.display_paths : bool = True
         self.cause_crash_second : bool = False
+        self.display_hitboxes : bool = True
 
         self.frame_time : float = 1000 // self.refresh_rate # in miliseconds
         self.simulation_threshold = self.frame_time # in miliseconds
@@ -38,8 +38,10 @@ class Simulator(QMainWindow):
         self.gui_timer.timeout.connect(self.render_scene)
         self.simulation_timer.timeout.connect(self.update_simulation)
         self.gui_timer.start(self.frame_time) # frame time
+
+        self.aircraft_image = QPixmap()
+        self.aircraft_image.load("src/assets/aircraft.png")
         
-        self.frame_counter : int = 0
         self.is_finished : bool = False
         self.aircrafts : list(Aircraft) = []
         self.reset_simulation()
@@ -177,30 +179,29 @@ class Simulator(QMainWindow):
             text_item.setPos(-25, y - 10)
             self.scene.addItem(text_item)
 
-        # path update planning
-        append_to_paths : bool = False
-        if not self.is_finished:
-            self.frame_counter += 1
-            if self.frame_counter == 3:
-                self.frame_counter = 0
-                append_to_paths = True  
-
         for aircraft in self.aircrafts:
+            # hitbox representation
+            if self.display_hitboxes:
+                aircraft_circle = QGraphicsEllipseItem(
+                    aircraft.position[0] - aircraft.size / 2,
+                    aircraft.position[1] - aircraft.size / 2,
+                    aircraft.size,
+                    aircraft.size)
+                self.scene.addItem(aircraft_circle)
+            
             # aircraft representation
-            aircraft_circle = QGraphicsEllipseItem(
-                aircraft.position[0] - aircraft.size / 2,
-                aircraft.position[1] - aircraft.size / 2,
-                aircraft.size,
-                aircraft.size)
-            if aircraft.safezone_occupied:
-                aircraft_circle.setPen(QPen(Qt.GlobalColor.gray))
-            self.scene.addItem(aircraft_circle)
+            aircraft_pixmap = QGraphicsPixmapItem(self.aircraft_image.scaled(40, 40))
+            aircraft_pixmap.setPos(aircraft.position[0], aircraft.position[1])
+            aircraft_pixmap.setScale(1)
 
-            # path update
-            if append_to_paths:
-                aircraft.path.append(copy(aircraft.position))
-                if len(aircraft.path) == 100:
-                    del aircraft.path[0]
+            transform = QTransform()
+            transform.rotate(aircraft.yaw_angle + 90)
+            transform.translate(-20.0, -20.0)
+            aircraft_pixmap.setTransform(transform)
+
+            if aircraft.safezone_occupied:
+                aircraft_pixmap.setOpacity(0.6)
+            self.scene.addItem(aircraft_pixmap)
 
             if self.debug:
                 # info label
@@ -215,8 +216,12 @@ class Simulator(QMainWindow):
 
                 # travelled path
                 if self.display_paths:
-                    if len(aircraft.path) > 1:
-                        for i in range(len(aircraft.path) - 1):
+                    length = len(aircraft.path)
+                    if length > 1:
+                        for i in range(length - 1)[::-1]: # loop backwards
+                            # prevent lag
+                            if length - i > 100:
+                                break
                             point1 = aircraft.path[i]
                             point2 = aircraft.path[i + 1]
                             path_line = QGraphicsLineItem(point1[0], point1[1], point2[0], point2[1])
@@ -360,5 +365,7 @@ class Simulator(QMainWindow):
             self.display_paths ^= 1
         elif event.key() == Qt.Key.Key_6:
             self.cause_crash_second ^= 1
+        elif event.key() == Qt.Key.Key_7:
+            self.display_hitboxes ^= 1
 
         return super().keyPressEvent(event)

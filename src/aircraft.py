@@ -14,11 +14,12 @@ class Aircraft:
     course : float
     position : QVector2D
     distance_covered : float
-    size : float = 50.0
+    size : float = 40.0
     max_course_change : float = 2.5
     safezone_size : float = 350.0
     safezone_occupied: bool
     path: List[QVector2D]
+    path_append_iterator : float
 
     def __init__(self, aircraft_id, position, yaw_angle, speed, course) -> None:
         """Initializes the aircraft"""
@@ -32,6 +33,7 @@ class Aircraft:
         self.distance_covered = 0.0
         self.safezone_occupied = False # todo: change to int
         self.path = []
+        self.path_append_iterator = 0.0
 
     def update_course(self, course) -> None:
         """Applies gradual change to yaw angle respecting set course"""
@@ -68,5 +70,10 @@ class Aircraft:
         previous_position : QVector2D = copy(self.position)
         self.position[0] += self.speed * cos(radians(self.yaw_angle))
         self.position[1] += self.speed * sin(radians(self.yaw_angle))
-        self.distance_covered += Maths.calculate_points_distance(previous_position, self.position)
+        distance = Maths.calculate_points_distance(previous_position, self.position)
+        self.distance_covered += distance
+        self.path_append_iterator += distance
+        if self.path_append_iterator >= 3.5:
+            self.path.append(copy(self.position))
+            self.path_append_iterator = 0
         return
