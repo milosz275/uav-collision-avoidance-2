@@ -1,11 +1,10 @@
 from PySide6.QtCore import Qt, QTimer, QPointF
 from PySide6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsPixmapItem
 from PySide6.QtGui import QPen, QKeySequence, QPixmap, QTransform, QVector2D
-from src.maths import Maths
 from src.aircraft import Aircraft
 from src.settings import Settings
 from src.fps_counter import FPSCounter
-from math import radians, sin, cos, atan2, degrees
+from math import radians, sin, cos, atan2, degrees, dist
 
 class Simulator(QMainWindow):
     """Main simulation App"""
@@ -88,10 +87,13 @@ class Simulator(QMainWindow):
             raise Exception("Aircraft ids are not the same. Closing...")
         
         # conflict detection
-        relative_distance = Maths.calculate_relative_distance(self.aircrafts[aircraft_id].position, self.aircrafts[1 - aircraft_id].position)
-        relative_distance_vector : QVector2D = Maths.calculate_relative_vector(self.aircrafts[aircraft_id].position, self.aircrafts[1 - aircraft_id].position)
+        relative_distance = dist(self.aircrafts[aircraft_id].position.toTuple(), self.aircrafts[1 - aircraft_id].position.toTuple())
+        relative_distance_vector = QVector2D(
+            self.aircrafts[aircraft_id].position.x() - self.aircrafts[1 - aircraft_id].position.x(),
+            self.aircrafts[aircraft_id].position.y() - self.aircrafts[1 - aircraft_id].position.y())
         print(f"Relative distance: {relative_distance:.2f}")
         print(f"Relative distance vector: {relative_distance_vector.toPoint().x():.2f}, {relative_distance_vector.toPoint().y():.2f}")
+        print(relative_distance_vector)
 
         # conflict resolution
         
@@ -126,7 +128,7 @@ class Simulator(QMainWindow):
         """Checks if safezones are entered by another aircrafts"""
         for i in range(len(self.aircrafts) - 1):
             for j in range(i + 1, len(self.aircrafts)):
-                distance = Maths.calculate_relative_distance(self.aircrafts[i].position, self.aircrafts[j].position)
+                distance = dist(self.aircrafts[i].position.toTuple(), self.aircrafts[j].position.toTuple())
                 if distance <= self.aircrafts[i].safezone_size / 2:
                     if not self.aircrafts[i].safezone_occupied:
                         self.aircrafts[i].safezone_occupied = True
@@ -151,7 +153,7 @@ class Simulator(QMainWindow):
         """Checks and returns if any of the aircrafts collided with each other"""
         for i in range(len(self.aircrafts) - 1):
             for j in range(i + 1, len(self.aircrafts)):
-                distance = Maths.calculate_relative_distance(self.aircrafts[i].position, self.aircrafts[j].position)
+                distance = dist(self.aircrafts[i].position.toTuple(), self.aircrafts[j].position.toTuple())
                 if distance <= ((self.aircrafts[i].size + self.aircrafts[j].size) / 2):
                     self.stop_simulation()
                     self.is_finished = True

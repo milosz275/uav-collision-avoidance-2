@@ -1,8 +1,7 @@
 from PySide6.QtCore import QPointF
 from typing import List
-from math import cos, sin, radians
+from math import cos, sin, radians, dist
 from copy import copy
-from src.maths import Maths
 
 class Aircraft:
     """Aircraft"""
@@ -70,7 +69,7 @@ class Aircraft:
         previous_position : QPointF = copy(self.position)
         self.position.setX(self.position.x() + self.speed * cos(radians(self.yaw_angle)))
         self.position.setY(self.position.y() + self.speed * sin(radians(self.yaw_angle)))
-        distance = Maths.calculate_relative_distance(previous_position, self.position)
+        distance = dist(previous_position.toTuple(), self.position.toTuple())
         self.distance_covered += distance
         self.path_append_iterator += distance
         if self.path_append_iterator >= 3.5:
