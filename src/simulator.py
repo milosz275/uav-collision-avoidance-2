@@ -93,7 +93,6 @@ class Simulator(QMainWindow):
             self.aircrafts[aircraft_id].position.y() - self.aircrafts[1 - aircraft_id].position.y())
         print(f"Relative distance: {relative_distance:.2f}")
         print(f"Relative distance vector: {relative_distance_vector.toPoint().x():.2f}, {relative_distance_vector.toPoint().y():.2f}")
-        print(relative_distance_vector)
 
         # conflict resolution
         
@@ -105,8 +104,8 @@ class Simulator(QMainWindow):
             aircraft.path.clear()
         self.aircrafts.clear() 
         self.aircrafts = [
-            Aircraft(0, position=QPointF(100, 100), yaw_angle=45, speed=2, course=45),
-            Aircraft(1, position=QPointF(900, 100), yaw_angle=135, speed=2, course=135)
+            Aircraft(0, position=QPointF(100, 100), yaw_angle=45, speed=3, course=45),
+            Aircraft(1, position=QPointF(900, 250), yaw_angle=135, speed=2, course=135)
         ]
         self.is_finished = False
         return
@@ -205,6 +204,15 @@ class Simulator(QMainWindow):
             text_item = QGraphicsSimpleTextItem(str(y))
             text_item.setPos(-25, y - 10)
             self.scene.addItem(text_item)
+
+        if len(self.aircrafts) == 2 and self.aircrafts[0].safezone_occupied or self.aircrafts[1].safezone_occupied:
+            relative_line = QGraphicsLineItem(
+                self.aircrafts[0].position.x(),
+                self.aircrafts[0].position.y(),
+                self.aircrafts[1].position.x(),
+                self.aircrafts[1].position.y())
+            relative_line.setPen(QPen(Qt.GlobalColor.green))
+            self.scene.addItem(relative_line)
 
         for aircraft in self.aircrafts:
             # aircraft representation
@@ -404,6 +412,8 @@ class Simulator(QMainWindow):
             self.stop_simulation()
             self.reset_simulation()
             self.start_simulation()
+        elif event.key() == Qt.Key.Key_T:
+            self.reset_flags()
         elif event.key() == Qt.Key.Key_Slash:
             if not self.is_finished:
                 if self.is_stopped:
