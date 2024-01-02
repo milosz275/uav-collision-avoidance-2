@@ -1,10 +1,10 @@
 from PySide6.QtCore import Qt, QTimer, QPointF
-from PySide6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsPixmapItem
-from PySide6.QtGui import QPen, QKeySequence, QPixmap, QTransform, QVector2D
+from PySide6.QtWidgets import QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsPixmapItem, QGraphicsPolygonItem
+from PySide6.QtGui import QPen, QKeySequence, QPixmap, QTransform, QVector2D, QPolygonF
 from src.aircraft import Aircraft
 from src.settings import Settings
 from src.fps_counter import FPSCounter
-from math import radians, sin, cos, atan2, degrees, dist
+from math import radians, sin, cos, atan2, degrees, dist, sqrt
 
 class Simulator(QMainWindow):
     """Main simulation App"""
@@ -31,6 +31,7 @@ class Simulator(QMainWindow):
         self.display_paths : bool = True
         self.cause_crash_second : bool = False
         self.display_hitboxes : bool = True
+        self.display_speed_vectors : bool = True
 
         self.aircraft_image = QPixmap()
         self.aircraft_image.load("src/assets/aircraft.png")
@@ -269,7 +270,7 @@ class Simulator(QMainWindow):
 
                 # info label
                 if self.display_aircraft_info:
-                    info_text = f"id: {aircraft.aircraft_id}\nx: {aircraft.position.x():.2f}\ny: {aircraft.position.y():.2f}\nspeed: {aircraft.speed}\ndistance: {aircraft.distance_covered:.1f}\ncourse: {aircraft.course:.1f}\nyaw: {aircraft.yaw_angle:.1f}"
+                    info_text = f"id: {aircraft.aircraft_id}\nx: {aircraft.position.x():.2f}\ny: {aircraft.position.y():.2f}\nspeed: {aircraft.speed:.2f}\ndistance: {aircraft.distance_covered:.1f}\ncourse: {aircraft.course:.1f}\nyaw: {aircraft.yaw_angle:.1f}"
                     text_item = QGraphicsSimpleTextItem(info_text)
                     if self.display_aircraft_info == 1:
                         text_item.setPos(-80 + 110 * (aircraft.aircraft_id + 1), 60)
@@ -307,6 +308,57 @@ class Simulator(QMainWindow):
                         aircraft.safezone_size,
                         aircraft.safezone_size)
                     self.scene.addItem(aircraft_safezone_circle)
+
+                # speed vector
+                if self.display_speed_vectors:
+                    speed_vector = aircraft.get_speed_vector()
+                    speed_vector_end = QVector2D(
+                        aircraft.position.x() + speed_vector.x() * aircraft.size, # it is vector scale
+                        aircraft.position.y() + speed_vector.y() * aircraft.size)
+                    speed_vector_line = QGraphicsLineItem(
+                        aircraft.position.x(),
+                        aircraft.position.y(),
+                        speed_vector_end.x(),
+                        speed_vector_end.y()
+                    )
+                    speed_vector_line.setPen(QPen(Qt.GlobalColor.blue))
+                    self.scene.addItem(speed_vector_line)
+
+                    arrowhead_size = aircraft.size / 3
+                    arrowhead_height = arrowhead_size * sqrt(3) / 2
+                    polygon = QPolygonF()
+                    polygon.append(
+                        QPointF(
+                            speed_vector_end.x() -arrowhead_size / 2,
+                            speed_vector_end.y() + arrowhead_height / 3
+                            )
+                    )
+                    polygon.append(
+                        QPointF(
+                            speed_vector_end.x() + arrowhead_size / 2,
+                            speed_vector_end.y() + arrowhead_height / 3
+                        )
+                    )
+                    polygon.append(
+                        QPointF(
+                            speed_vector_end.x(),
+                            speed_vector_end.y() - 2 * arrowhead_height / 3
+                        )
+                    )
+                    arrowhead = QGraphicsPolygonItem(polygon)
+                    transform = QTransform()
+                    transform.translate(
+                        speed_vector_end.x(),
+                        speed_vector_end.y()
+                    )
+                    transform.rotate(aircraft.yaw_angle + 90)
+                    transform.translate(
+                        -speed_vector_end.x(),
+                        -speed_vector_end.y()
+                    )
+                    arrowhead.setTransform(transform)
+                    self.scene.addItem(arrowhead)
+
 
                 # angles of movement
                 if self.display_yaw_trajectory:
@@ -362,10 +414,10 @@ class Simulator(QMainWindow):
             elif event.key() == Qt.Key.Key_W:
                 self.aircrafts[0].course = 270
             elif event.key() == Qt.Key.Key_F2:
-                if self.aircrafts[0].speed > 1:
-                    self.aircrafts[0].speed -= 1
+                if self.aircrafts[0].set_speed > 1:
+                    self.aircrafts[0].set_speed -= 1
             elif event.key() == Qt.Key.Key_F3:
-                self.aircrafts[0].speed += 1
+                self.aircrafts[0].set_speed += 1
             elif event.key() == Qt.Key.Key_Y:
                 course = self.aircrafts[0].course
                 course -= self.aircrafts[0].max_course_change * 2
@@ -390,10 +442,10 @@ class Simulator(QMainWindow):
             elif event.key() == Qt.Key.Key_I:
                 self.aircrafts[1].course = 270
             elif event.key() == Qt.Key.Key_F6:
-                if self.aircrafts[1].speed > 1:
-                    self.aircrafts[1].speed -= 1
+                if self.aircrafts[1].set_speed > 1:
+                    self.aircrafts[1].set_speed -= 1
             elif event.key() == Qt.Key.Key_F7:
-                self.aircrafts[1].speed += 1
+                self.aircrafts[1].set_speed += 1
             elif event.key() == Qt.Key.Key_O:
                 course = self.aircrafts[1].course
                 course -= self.aircrafts[1].max_course_change * 2
@@ -442,5 +494,7 @@ class Simulator(QMainWindow):
             self.cause_crash_second ^= 1
         elif event.key() == Qt.Key.Key_8:
             self.display_hitboxes ^= 1
+        elif event.key() == Qt.Key.Key_9:
+            self.display_speed_vectors ^= 1
 
         return super().keyPressEvent(event)
