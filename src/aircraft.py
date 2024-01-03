@@ -16,14 +16,14 @@ class Aircraft:
     position : QPointF
     distance_covered : float
     size : float = 40.0
-    max_course_change : float = 2.5
+    max_course_change : float = 1.5
     speedstep : float = 0.05
     safezone_size : float = 1000.0
     safezone_occupied: bool
     path: List[QPointF]
     path_append_iterator : float
 
-    def __init__(self, aircraft_id, position, yaw_angle, speed, course) -> None:
+    def __init__(self, aircraft_id, position, yaw_angle, speed) -> None:
         """Initializes the aircraft"""
         self.aircraft_id = aircraft_id
         self.yaw_angle = yaw_angle
@@ -31,7 +31,7 @@ class Aircraft:
         self.roll_angle = 0.0
         self.speed = speed
         self.set_speed = speed
-        self.course = course
+        self.course = self.yaw_angle
         self.position = position
         self.distance_covered = 0.0
         self.safezone_occupied = False # todo: change to int

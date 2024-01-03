@@ -105,8 +105,8 @@ class Simulator(QMainWindow):
             aircraft.path.clear()
         self.aircrafts.clear() 
         self.aircrafts = [
-            Aircraft(0, position=QPointF(100, 100), yaw_angle=45, speed=3, course=45),
-            Aircraft(1, position=QPointF(900, 250), yaw_angle=135, speed=2, course=135)
+            Aircraft(0, position=QPointF(100, 700), yaw_angle=315, speed=2.5),
+            Aircraft(1, position=QPointF(700, 800), yaw_angle=270, speed=2)
         ]
         self.is_finished = False
         return
@@ -312,8 +312,8 @@ class Simulator(QMainWindow):
                 # speed vector
                 if self.display_speed_vectors:
                     speed_vector = aircraft.get_speed_vector()
-                    speed_vector_end = QVector2D(
-                        aircraft.position.x() + speed_vector.x() * aircraft.size, # it is vector scale
+                    speed_vector_end = QPointF(
+                        aircraft.position.x() + speed_vector.x() * aircraft.size, # aircraft size is scale
                         aircraft.position.y() + speed_vector.y() * aircraft.size)
                     speed_vector_line = QGraphicsLineItem(
                         aircraft.position.x(),
@@ -324,6 +324,7 @@ class Simulator(QMainWindow):
                     speed_vector_line.setPen(QPen(Qt.GlobalColor.blue))
                     self.scene.addItem(speed_vector_line)
 
+                    # arrowhead
                     arrowhead_size = aircraft.size / 3
                     arrowhead_height = arrowhead_size * sqrt(3) / 2
                     polygon = QPolygonF()
@@ -358,6 +359,25 @@ class Simulator(QMainWindow):
                     )
                     arrowhead.setTransform(transform)
                     self.scene.addItem(arrowhead)
+
+                    # negative opponent's speed vector
+                    if len(self.aircrafts) == 2:
+                        opponent_speed_vector : QVector2D = self.aircrafts[1 - aircraft.aircraft_id].get_speed_vector()
+                        opponent_speed_vector_negative = QVector2D(-opponent_speed_vector.x(), -opponent_speed_vector.y())
+                        opponent_speed_vector_negative_end = QPointF(
+                            speed_vector_end.x() + opponent_speed_vector_negative.x() * aircraft.size, # aircraft size is scale
+                            speed_vector_end.y() + opponent_speed_vector_negative.y() * aircraft.size
+                        )
+                        opponent_speed_vector_negative_line = QGraphicsLineItem(
+                            speed_vector_end.x(),
+                            speed_vector_end.y(),
+                            opponent_speed_vector_negative_end.x(),
+                            opponent_speed_vector_negative_end.y()
+                        )
+                        opponent_speed_vector_negative_line.setPen(QPen(Qt.GlobalColor.red))
+                        self.scene.addItem(opponent_speed_vector_negative_line)
+
+                        
 
 
                 # angles of movement
