@@ -7,6 +7,7 @@ from copy import copy
 class Aircraft:
     """Aircraft"""
     aircraft_id: int
+<<<<<<< HEAD
     yaw_angle : float # heading angle
     pitch_angle : float # dive angle
     roll_angle : float # bank angle
@@ -28,6 +29,23 @@ class Aircraft:
     is_turning_right : bool
     path: List[QPointF]
     g_acceleration : float = 9.81
+=======
+    yaw_angle : float
+    pitch_angle : float
+    roll_angle : float
+    set_speed : float # speed set to be achieved
+    speed : float # actual speed in m/s
+    minimal_speed : float = 5.0 # minimal airspeed in m/s
+    course : float # set course in degrees (0-360)
+    position : QPointF # point x,y in meters
+    distance_covered : float # distance in meters
+    size : float = 150 # size in meters
+    max_course_change : float = 1.5 # angle step
+    speedstep : float = 0.05 # m/s change in simulation iteration
+    safezone_size : float = 1000.0 # meters
+    safezone_occupied: bool
+    path: List[QPointF]
+>>>>>>> e239d68a8087a71d5a66a362bdbc5cc8100bb7cc
 
     def __init__(self, aircraft_id, position, yaw_angle, speed, size) -> None:
         """Initializes the aircraft"""
@@ -49,6 +67,7 @@ class Aircraft:
         self.is_turning = False
         self.is_turning_right = False
         self.path = []
+<<<<<<< HEAD
 
     # def calculate_turn_radius(self) -> None:
     #     """A"""
@@ -70,6 +89,8 @@ class Aircraft:
         # elif ratio > 1:
         #     ratio = 1
         # self.max_course_change = degrees(asin(ratio))
+=======
+>>>>>>> e239d68a8087a71d5a66a362bdbc5cc8100bb7cc
 
     def update_course(self) -> None:
         """Applies gradual change to yaw angle respecting set course"""
@@ -111,7 +132,11 @@ class Aircraft:
         return
     
     def update_speed(self) -> None:
-        """A"""
+        """Updates speed to the set one"""
+        if self.set_speed < self.minimal_speed or self.speed < self.minimal_speed:
+            self.set_speed = self.minimal_speed
+            self.speed = self.minimal_speed
+            return
         if self.set_speed == self.speed:
             return
         elif self.set_speed > self.speed:
