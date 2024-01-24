@@ -16,21 +16,20 @@ class Aircraft:
     course : float # set course in degrees (0-360)
     position : QPointF # point x,y in meters
     distance_covered : float # distance in meters
-    size : float # size in meters
+    size : float = 150 # size in meters
     max_course_change : float = 1.5 # angle step
     speedstep : float = 0.05 # m/s change in simulation iteration
     safezone_size : float = 1000.0 # meters
     safezone_occupied: bool
     path: List[QPointF]
 
-    def __init__(self, aircraft_id, position, yaw_angle, speed, size) -> None:
+    def __init__(self, aircraft_id, position, yaw_angle, speed) -> None:
         """Initializes the aircraft"""
         self.aircraft_id = aircraft_id
         self.yaw_angle = yaw_angle
         self.pitch_angle = 0.0
         self.roll_angle = 0.0
         self.speed = speed
-        self.size = size
         self.set_speed = speed
         self.course = self.yaw_angle
         self.position = position
@@ -67,7 +66,7 @@ class Aircraft:
     
     def update_speed(self) -> None:
         """Updates speed to the set one"""
-        if self.set_speed <= self.minimal_speed or self.speed <= self.minimal_speed:
+        if self.set_speed < self.minimal_speed or self.speed < self.minimal_speed:
             self.set_speed = self.minimal_speed
             self.speed = self.minimal_speed
             return
