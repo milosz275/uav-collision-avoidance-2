@@ -5,17 +5,21 @@ from src.aircraft import Aircraft
 from src.settings import Settings
 from src.fps_counter import FPSCounter
 from math import radians, sin, cos, atan2, degrees, dist, sqrt
+from copy import copy
 
 class Simulator(QMainWindow):
     """Main simulation App"""
-    def __init__(self) -> None:
-        super().__init__()
+    g_acceleration : float = 9.81
 
+    def __init__(self) -> None:
+        """A"""
+        super().__init__()
+        Settings().__init__()
         self.resolution = Settings.resolution
         self.bounding_box_resolution = [Settings.resolution[0], Settings.resolution[1]]
         self.refresh_rate = Settings.refresh_rate
 
-        self.setWindowTitle("UAV Flight Simulator")
+        self.setWindowTitle("UAV Collision Avoidance")
         self.setGeometry(0, 0, self.resolution[0] + 10, self.resolution[1] + 10)
 
         self.scene = QGraphicsScene()
@@ -47,6 +51,9 @@ class Simulator(QMainWindow):
         self.gui_timer.start(self.frame_time)
         self.current_simulation_fps : float = 0.0
     
+        self.aircraft_size : float = self.resolution[1] * 0.04
+        self.graphical_spacing : float = self.resolution[1] * 0.01
+
         self.is_stopped : bool = False
         self.is_finished : bool = False
         self.aircrafts : list(Aircraft) = []
@@ -105,8 +112,8 @@ class Simulator(QMainWindow):
             aircraft.path.clear()
         self.aircrafts.clear() 
         self.aircrafts = [
-            Aircraft(0, position=QPointF(100, 700), yaw_angle=315, speed=2.5),
-            Aircraft(1, position=QPointF(700, 800), yaw_angle=270, speed=2)
+            Aircraft(0, position=QPointF(1000, 7000), yaw_angle=315, speed=25, size=self.aircraft_size),
+            Aircraft(1, position=QPointF(7000, 8000), yaw_angle=270, speed=20, size=self.aircraft_size)
         ]
         self.is_finished = False
         return
@@ -164,7 +171,9 @@ class Simulator(QMainWindow):
     def check_offscreen(self) -> bool:
         """Checks and returns if any of the aircrafts collided with simulation boundaries"""
         for aircraft in self.aircrafts:
-            if not (0 + aircraft.size / 2 <= aircraft.position.x() <= self.resolution[0] - aircraft.size / 2 and 0 + aircraft.size / 2 <= aircraft.position.y() <= self.resolution[1] - aircraft.size / 2):
+            x_within_bounds = 0 + aircraft.size / 2 <= aircraft.position.x() <= self.resolution[0] - aircraft.size / 2
+            y_within_bounds = 0 + aircraft.size / 2 <= aircraft.position.y() <= self.resolution[1] - aircraft.size / 2
+            if not (x_within_bounds and y_within_bounds):
                 self.stop_simulation()
                 self.is_finished = True
                 print("Aircraft left simulation boundaries. Simulation stopped")
@@ -176,8 +185,8 @@ class Simulator(QMainWindow):
         if len(self.aircrafts) >= 2:
             aircraft = self.aircrafts[1]
             target_aircraft = self.aircrafts[0]
-            delta_x = target_aircraft.position.x() - aircraft.position.x()
-            delta_y = target_aircraft.position.y() - aircraft.position.y()
+            delta_x = target_aircraft.position.x() + target_aircraft.get_speed_vector().x() * target_aircraft.size - aircraft.position.x()
+            delta_y = target_aircraft.position.y() + target_aircraft.get_speed_vector().y() * target_aircraft.size - aircraft.position.y()
             angle_rad = atan2(delta_y, delta_x)
             angle_deg = degrees(angle_rad)
             angle_deg %= 360
@@ -193,37 +202,37 @@ class Simulator(QMainWindow):
         self.scene.addItem(bounding_box)
 
         for x in range(100, self.resolution[0], 100):
-            ruler_mark = QGraphicsLineItem(x, 0, x, 10)
+            ruler_mark = QGraphicsLineItem(x, 0, x, self.graphical_spacing)
             self.scene.addItem(ruler_mark)
-            text_item = QGraphicsSimpleTextItem(str(x))
-            text_item.setPos(x - 10, -25)
+            text_item = QGraphicsSimpleTextItem(str(x * 10) + str(" m"))
+            text_item.setPos(x - self.graphical_spacing, -2.5 * self.graphical_spacing)
             self.scene.addItem(text_item)
 
         for y in range(100, self.resolution[1], 100):
-            ruler_mark = QGraphicsLineItem(0, y, 10, y)
+            ruler_mark = QGraphicsLineItem(0, y, self.graphical_spacing, y)
             self.scene.addItem(ruler_mark)
-            text_item = QGraphicsSimpleTextItem(str(y))
-            text_item.setPos(-25, y - 10)
+            text_item = QGraphicsSimpleTextItem(str(y * 10) + str(" m"))
+            text_item.setPos(-5 * self.graphical_spacing, y - self.graphical_spacing)
             self.scene.addItem(text_item)
 
         if len(self.aircrafts) == 2 and self.aircrafts[0].safezone_occupied or self.aircrafts[1].safezone_occupied:
             relative_line = QGraphicsLineItem(
-                self.aircrafts[0].position.x(),
-                self.aircrafts[0].position.y(),
-                self.aircrafts[1].position.x(),
-                self.aircrafts[1].position.y())
+                self.aircrafts[0].rendered_position.x(),
+                self.aircrafts[0].rendered_position.y(),
+                self.aircrafts[1].rendered_position.x(),
+                self.aircrafts[1].rendered_position.y())
             relative_line.setPen(QPen(Qt.GlobalColor.green))
             self.scene.addItem(relative_line)
 
         for aircraft in self.aircrafts:
             # aircraft representation
-            aircraft_pixmap = QGraphicsPixmapItem(self.aircraft_image.scaled(40, 40))
-            aircraft_pixmap.setPos(aircraft.position.x(), aircraft.position.y())
+            aircraft_pixmap = QGraphicsPixmapItem(self.aircraft_image.scaled(self.aircraft_size, self.aircraft_size))
+            aircraft_pixmap.setPos(aircraft.rendered_position.x(), aircraft.rendered_position.y())
             aircraft_pixmap.setScale(1)
 
             transform = QTransform()
             transform.rotate(aircraft.yaw_angle + 90)
-            transform.translate(-20.0, -20.0)
+            transform.translate(-self.aircraft_size / 2.0, -self.aircraft_size / 2.0)
             aircraft_pixmap.setTransform(transform)
 
             if aircraft.safezone_occupied:
@@ -262,20 +271,25 @@ class Simulator(QMainWindow):
                 # hitbox representation
                 if self.display_hitboxes:
                     aircraft_circle = QGraphicsEllipseItem(
-                        aircraft.position.x() - aircraft.size / 2,
-                        aircraft.position.y() - aircraft.size / 2,
+                        aircraft.rendered_position.x() - aircraft.size / 2,
+                        aircraft.rendered_position.y() - aircraft.size / 2,
                         aircraft.size,
                         aircraft.size)
                     self.scene.addItem(aircraft_circle)
 
                 # info label
                 if self.display_aircraft_info:
-                    info_text = f"id: {aircraft.aircraft_id}\nx: {aircraft.position.x():.2f}\ny: {aircraft.position.y():.2f}\nspeed: {aircraft.speed:.2f}\ndistance: {aircraft.distance_covered:.1f}\ncourse: {aircraft.course:.1f}\nyaw: {aircraft.yaw_angle:.1f}"
+                    turn_direction = ""
+                    if aircraft.is_turning:
+                        turn_direction = "\nturning: right" if aircraft.is_turning_right else "\nturning: left"
+                    info_text = f"id: {aircraft.aircraft_id}\nx: {aircraft.position.x():.2f}\ny: {aircraft.position.y():.2f} \
+                        \nspeed: {aircraft.speed:.2f}\ndistance: {aircraft.distance_covered:.1f} \
+                        \ncourse: {aircraft.course:.1f}\nyaw: {aircraft.yaw_angle:.1f}\nis turning: {aircraft.is_turning}{turn_direction}"
                     text_item = QGraphicsSimpleTextItem(info_text)
                     if self.display_aircraft_info == 1:
                         text_item.setPos(-80 + 110 * (aircraft.aircraft_id + 1), 60)
                     elif self.display_aircraft_info == 2:
-                        text_item.setPos(aircraft.position.x() -100, aircraft.position.y() -100)
+                        text_item.setPos(aircraft.rendered_position.x() -100, aircraft.rendered_position.y() -100)
                     self.scene.addItem(text_item)
 
                 # travelled path
@@ -303,8 +317,8 @@ class Simulator(QMainWindow):
                 # safezone around the aircraft
                 if self.display_safezone:
                     aircraft_safezone_circle = QGraphicsEllipseItem(
-                        aircraft.position.x() - aircraft.safezone_size / 2,
-                        aircraft.position.y() - aircraft.safezone_size / 2,
+                        aircraft.rendered_position.x() - aircraft.safezone_size / 2,
+                        aircraft.rendered_position.y() - aircraft.safezone_size / 2,
                         aircraft.safezone_size,
                         aircraft.safezone_size)
                     self.scene.addItem(aircraft_safezone_circle)
@@ -313,11 +327,11 @@ class Simulator(QMainWindow):
                 if self.display_speed_vectors:
                     speed_vector = aircraft.get_speed_vector()
                     speed_vector_end = QPointF(
-                        aircraft.position.x() + speed_vector.x() * aircraft.size, # aircraft size is scale
-                        aircraft.position.y() + speed_vector.y() * aircraft.size)
+                        aircraft.rendered_position.x() + speed_vector.x() * aircraft.size, # aircraft size is scale
+                        aircraft.rendered_position.y() + speed_vector.y() * aircraft.size)
                     speed_vector_line = QGraphicsLineItem(
-                        aircraft.position.x(),
-                        aircraft.position.y(),
+                        aircraft.rendered_position.x(),
+                        aircraft.rendered_position.y(),
                         speed_vector_end.x(),
                         speed_vector_end.y()
                     )
@@ -376,25 +390,39 @@ class Simulator(QMainWindow):
                         )
                         opponent_speed_vector_negative_line.setPen(QPen(Qt.GlobalColor.red))
                         self.scene.addItem(opponent_speed_vector_negative_line)
+                
+                # turn circle
+                if aircraft.is_turning:
+                    point1 = copy(aircraft.previous_position)
+                    point2 = copy(aircraft.rendered_position)
+                    length = dist(point1.toTuple(), point2.toTuple())
+                    
+                    center_x = 1
+                    center_y = 2
+                    radius = 3
 
-                        
-
+                    turn_circle = QGraphicsEllipseItem(
+                        center_x,
+                        center_y,
+                        radius,
+                        radius)
+                    self.scene.addItem(turn_circle)
 
                 # angles of movement
                 if self.display_yaw_trajectory:
                     yaw_angle_line = QGraphicsLineItem(
-                        aircraft.position.x(),
-                        aircraft.position.y(),
-                        aircraft.position.x() + 1000 * cos(radians(aircraft.yaw_angle)),
-                        aircraft.position.y() + 1000 * sin(radians(aircraft.yaw_angle)))
+                        aircraft.rendered_position.x(),
+                        aircraft.rendered_position.y(),
+                        aircraft.rendered_position.x() + 1000 * cos(radians(aircraft.yaw_angle)),
+                        aircraft.rendered_position.y() + 1000 * sin(radians(aircraft.yaw_angle)))
                     yaw_angle_line.setPen(QPen(Qt.GlobalColor.red))
                     self.scene.addItem(yaw_angle_line)
                 if self.display_course_trajectory:
                     course_line = QGraphicsLineItem(
-                        aircraft.position.x(),
-                        aircraft.position.y(),
-                        aircraft.position.x() + 1000 * cos(radians(aircraft.course)),
-                        aircraft.position.y() + 1000 * sin(radians(aircraft.course)))
+                        aircraft.rendered_position.x(),
+                        aircraft.rendered_position.y(),
+                        aircraft.rendered_position.x() + 1000 * cos(radians(aircraft.course)),
+                        aircraft.rendered_position.y() + 1000 * sin(radians(aircraft.course)))
                     if aircraft.course % 45 == 0 and not aircraft.course % 90 == 0:
                         course_line.setPen(QPen(Qt.GlobalColor.green))
                     self.scene.addItem(course_line)
@@ -434,7 +462,7 @@ class Simulator(QMainWindow):
             elif event.key() == Qt.Key.Key_W:
                 self.aircrafts[0].course = 270
             elif event.key() == Qt.Key.Key_F2:
-                if self.aircrafts[0].set_speed > 1:
+                if self.aircrafts[0].set_speed >= 2:
                     self.aircrafts[0].set_speed -= 1
             elif event.key() == Qt.Key.Key_F3:
                 self.aircrafts[0].set_speed += 1
@@ -462,7 +490,7 @@ class Simulator(QMainWindow):
             elif event.key() == Qt.Key.Key_I:
                 self.aircrafts[1].course = 270
             elif event.key() == Qt.Key.Key_F6:
-                if self.aircrafts[1].set_speed > 1:
+                if self.aircrafts[1].set_speed >= 2:
                     self.aircrafts[1].set_speed -= 1
             elif event.key() == Qt.Key.Key_F7:
                 self.aircrafts[1].set_speed += 1

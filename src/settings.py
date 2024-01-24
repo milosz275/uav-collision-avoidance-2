@@ -1,13 +1,27 @@
+from PySide6.QtCore import QSize
+
 class Settings:
     """Settings"""
-    resolution = (1100, 900)  # default resolution
-    refresh_rate = 60  # default refresh rate
+    screen_resolution : QSize
+    resolution : tuple
+    refresh_rate = 60
 
+    @classmethod
+    def __init__(cls) -> None:
+        """Sets the resolution"""
+        cls.resolution = (int(cls.screen_resolution.width() * 0.6), int(cls.screen_resolution.height() * 0.75))
+        return
+    
     @classmethod
     def set_resolution(cls, width, height) -> None:
         """Sets the resolution"""
         cls.resolution = (width - 10, height - 10)
         return
+    
+    @classmethod
+    def get_resolution(cls) -> None:
+        """Gets the resolution"""
+        return (cls.resolution[0], cls.resolution[1])
 
     @classmethod
     def set_refresh_rate(cls, rate) -> None:
