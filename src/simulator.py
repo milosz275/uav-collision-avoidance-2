@@ -105,8 +105,8 @@ class Simulator(QMainWindow):
             aircraft.path.clear()
         self.aircrafts.clear() 
         self.aircrafts = [
-            Aircraft(0, position=QPointF(100, 700), yaw_angle=315, speed=2.5),
-            Aircraft(1, position=QPointF(700, 800), yaw_angle=270, speed=2)
+            Aircraft(0, position=QPointF(100, 700), yaw_angle=315, speed=2.5, size=30),
+            Aircraft(1, position=QPointF(700, 800), yaw_angle=270, speed=2.0, size=30)
         ]
         self.is_finished = False
         return
@@ -164,7 +164,9 @@ class Simulator(QMainWindow):
     def check_offscreen(self) -> bool:
         """Checks and returns if any of the aircrafts collided with simulation boundaries"""
         for aircraft in self.aircrafts:
-            if not (0 + aircraft.size / 2 <= aircraft.position.x() <= self.resolution[0] - aircraft.size / 2 and 0 + aircraft.size / 2 <= aircraft.position.y() <= self.resolution[1] - aircraft.size / 2):
+            x_within_bounds = 0 + aircraft.size / 2 <= aircraft.position.x() <= self.resolution[0] - aircraft.size / 2
+            y_within_bounds = 0 + aircraft.size / 2 <= aircraft.position.y() <= self.resolution[1] - aircraft.size / 2
+            if not (x_within_bounds and y_within_bounds):
                 self.stop_simulation()
                 self.is_finished = True
                 print("Aircraft left simulation boundaries. Simulation stopped")

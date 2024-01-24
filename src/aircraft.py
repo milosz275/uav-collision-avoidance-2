@@ -16,12 +16,11 @@ class Aircraft:
     position : QPointF
     distance_covered : float
     size : float = 40.0
-    max_course_change : float = 1.5
-    speedstep : float = 0.05
-    safezone_size : float = 1000.0
+    max_course_change : float = 1.5 # angle step
+    speedstep : float = 0.05 # m/s change in simulation iteration
+    safezone_size : float = 1000.0 # meters
     safezone_occupied: bool
     path: List[QPointF]
-    path_append_iterator : float
 
     def __init__(self, aircraft_id, position, yaw_angle, speed) -> None:
         """Initializes the aircraft"""
@@ -36,7 +35,6 @@ class Aircraft:
         self.distance_covered = 0.0
         self.safezone_occupied = False # todo: change to int
         self.path = []
-        self.path_append_iterator = 0.0
 
     def update_course(self) -> None:
         """Applies gradual change to yaw angle respecting set course"""
@@ -97,10 +95,7 @@ class Aircraft:
         self.distance_covered += distance
         
         # path
-        self.path_append_iterator += distance
-        if self.path_append_iterator >= 3.5:
-            self.path.append(copy(self.position))
-            self.path_append_iterator = 0
+        self.path.append(copy(self.position))
         return
 
     def get_speed_vector(self) -> QVector2D:
