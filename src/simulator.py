@@ -10,7 +10,7 @@ class Simulator(QMainWindow):
     """Main simulation App"""
     def __init__(self) -> None:
         super().__init__()
-
+        Settings().__init__()
         self.resolution = Settings.resolution
         self.bounding_box_resolution = [Settings.resolution[0], Settings.resolution[1]]
         self.refresh_rate = Settings.refresh_rate
