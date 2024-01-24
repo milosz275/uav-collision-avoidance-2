@@ -60,7 +60,9 @@ The simulator defaults to showcase mode where there is no way to interact with t
 - [x] Run simulation and Gui separately
 - [x] Add smooth angle transition
 - [x] Add safezones and its handling
-- [ ] Transition from PyQt6 to PySide6
+- [x] Transition from PyQt6 to PySide6
+- [x] Add resolution based scaling
+- [ ] Add python package
 - [ ] Add flight control computer (FCC) to handle setting destination and vectors
 - [ ] Implement collision avoidance algorithm
 [^1]: https://doc.qt.io/qtforpython-6/

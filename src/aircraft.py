@@ -14,9 +14,9 @@ class Aircraft:
     speed : float # actual speed in m/s
     minimal_speed : float = 5.0 # minimal airspeed in m/s
     course : float # set course in degrees (0-360)
-    position : QPointF
-    distance_covered : float
-    size : float
+    position : QPointF # point x,y in meters
+    distance_covered : float # distance in meters
+    size : float # size in meters
     max_course_change : float = 1.5 # angle step
     speedstep : float = 0.05 # m/s change in simulation iteration
     safezone_size : float = 1000.0 # meters
