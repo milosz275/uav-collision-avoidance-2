@@ -7,29 +7,6 @@ from copy import copy
 class Aircraft:
     """Aircraft"""
     aircraft_id: int
-<<<<<<< HEAD
-    yaw_angle : float # heading angle
-    pitch_angle : float # dive angle
-    roll_angle : float # bank angle
-    set_speed : float
-    speed : float
-    vertical_speed : float
-    course : float
-    position : QPointF
-    rendered_position : QPointF
-    previous_position : QPointF
-    distance_covered : float
-    size : float
-    turn_radius : float
-    max_course_change : float
-    speedstep : float = 0.05
-    safezone_size : float = 1000.0
-    safezone_occupied : bool
-    is_turning : bool
-    is_turning_right : bool
-    path: List[QPointF]
-    g_acceleration : float = 9.81
-=======
     yaw_angle : float
     pitch_angle : float
     roll_angle : float
@@ -45,7 +22,6 @@ class Aircraft:
     safezone_size : float = 1000.0 # meters
     safezone_occupied: bool
     path: List[QPointF]
->>>>>>> e239d68a8087a71d5a66a362bdbc5cc8100bb7cc
 
     def __init__(self, aircraft_id, position, yaw_angle, speed, size) -> None:
         """Initializes the aircraft"""
@@ -67,30 +43,6 @@ class Aircraft:
         self.is_turning = False
         self.is_turning_right = False
         self.path = []
-<<<<<<< HEAD
-
-    # def calculate_turn_radius(self) -> None:
-    #     """A"""
-    #     self.turn_radius = float((self.g_acceleration * tan(self.roll_angle)) / self.speed)
-        
-
-    def calculate_max_course_change(self) -> None:
-        """A"""
-        self.max_course_change = float((self.g_acceleration * tan(self.roll_angle)) / self.speed)
-
-        # chord_length : float = dist(self.previous_position.toTuple(), self.position.toTuple())
-        # if chord_length <= 0 or self.turn_radius <= 0:
-        #     self.max_course_change = 0
-        #     return
-        # height : float = (chord_length ** 2) / (2 * self.turn_radius)
-        # ratio = height / chord_length
-        # if ratio < -1:
-        #     ratio = -1
-        # elif ratio > 1:
-        #     ratio = 1
-        # self.max_course_change = degrees(asin(ratio))
-=======
->>>>>>> e239d68a8087a71d5a66a362bdbc5cc8100bb7cc
 
     def update_course(self) -> None:
         """Applies gradual change to yaw angle respecting set course"""
@@ -175,3 +127,6 @@ class Aircraft:
     def get_speed_vector(self) -> QVector2D:
         """Returns speed vector of the aircraft"""
         return QVector2D(self.speed * cos(radians(self.yaw_angle)), self.speed * sin(radians(self.yaw_angle)))
+
+    def calculate_max_course_change(self) -> None:
+        return self.max_course_change
