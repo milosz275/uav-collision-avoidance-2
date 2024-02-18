@@ -38,7 +38,7 @@ class Aircraft:
         self.size = size
         self.previous_position = copy(position)
         self.distance_covered = 0.0
-        self.max_course_change = 0.0
+        self.max_course_change = 2.5
         self.safezone_occupied = False # todo: change to int
         self.is_turning = False
         self.is_turning_right = False
